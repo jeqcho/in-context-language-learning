@@ -603,6 +603,9 @@ class DataConfig(BaseConfig):
 class EvaluatorType(StrEnum):
     downstream = "downstream"
     lm = "lm"
+    bg = "bg" # bigram
+    ug = "ug" # unigram
+    uf = "uf" # uniform
 
 
 @dataclass

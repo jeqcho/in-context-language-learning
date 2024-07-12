@@ -11,6 +11,10 @@ from ..torch_util import get_global_rank, get_world_size
 from .downstream import ICLMetric, label_to_task_map
 from .evaluator import Evaluator
 
+from .bigram_evaluator import KLBigramMetric
+from .unigram_evaluator import KLUnigramMetric
+from .uniform_evaluator import KLUniformMetric
+
 __all__ = [
     "Evaluator",
     "ICLMetric",
@@ -95,6 +99,78 @@ def build_evaluator(
         else:
             raise OLMoConfigurationError("One of DataConfig.paths or DataConfig.datasets is required")
 
+        return Evaluator(
+            label=eval_config.label,
+            type=eval_config.type,
+            eval_loader=eval_loader,
+            eval_metric=eval_metric,
+            subset_num_batches=eval_config.subset_num_batches,
+        )
+    elif eval_config.type == EvaluatorType.bg:
+        # KL divergence with bigram model
+        # load the on-the-fly Markov chain generator
+        eval_loader = build_eval_dataloader(
+            train_config,
+            eval_config.data,
+            eval_config.device_eval_batch_size or train_config.device_eval_batch_size,
+        )
+
+        # use KL divergence
+        def make_metric():
+            return KLBigramMetric(dim=train_config.model.embedding_size).to(device)
+        
+        eval_metric: Union[Metric, Dict[str, Metric]]
+        eval_metric = make_metric()
+
+        # return an evaluator that computes the KL divergence with the bigram model
+        return Evaluator(
+            label=eval_config.label,
+            type=eval_config.type,
+            eval_loader=eval_loader,
+            eval_metric=eval_metric,
+            subset_num_batches=eval_config.subset_num_batches,
+        )
+    elif eval_config.type == EvaluatorType.uf:
+        # KL divergence with uniform model
+        # load the on-the-fly Markov chain generator
+        eval_loader = build_eval_dataloader(
+            train_config,
+            eval_config.data,
+            eval_config.device_eval_batch_size or train_config.device_eval_batch_size,
+        )
+
+        # use KL divergence
+        def make_metric():
+            return KLUniformMetric(dim=train_config.model.embedding_size).to(device)
+        
+        eval_metric: Union[Metric, Dict[str, Metric]]
+        eval_metric = make_metric()
+
+        # return an evaluator that computes the KL divergence with the bigram model
+        return Evaluator(
+            label=eval_config.label,
+            type=eval_config.type,
+            eval_loader=eval_loader,
+            eval_metric=eval_metric,
+            subset_num_batches=eval_config.subset_num_batches,
+        )
+    elif eval_config.type == EvaluatorType.ug:
+        # KL divergence with unigram model
+        # load the on-the-fly Markov chain generator
+        eval_loader = build_eval_dataloader(
+            train_config,
+            eval_config.data,
+            eval_config.device_eval_batch_size or train_config.device_eval_batch_size,
+        )
+
+        # use KL divergence
+        def make_metric():
+            return KLUnigramMetric(dim=train_config.model.embedding_size).to(device)
+        
+        eval_metric: Union[Metric, Dict[str, Metric]]
+        eval_metric = make_metric()
+
+        # return an evaluator that computes the KL divergence with the bigram model
         return Evaluator(
             label=eval_config.label,
             type=eval_config.type,

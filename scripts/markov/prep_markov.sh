@@ -1,0 +1,1 @@
+python prepare_markov_data.py /n/holyscratch01/sham_lab/summer_2024/datasets/deterministic_markov --tokenizer=../../olmo_data/tokenizers/8-token-tokenizer.json --seq-len=150 --eos=7 --pad=6

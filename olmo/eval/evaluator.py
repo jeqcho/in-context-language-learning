@@ -7,6 +7,9 @@ from torchmetrics import MeanMetric, Metric
 
 from ..config import EvaluatorType
 from .downstream import ICLMetric
+from .bigram_evaluator import KLBigramMetric
+from .unigram_evaluator import KLUnigramMetric
+from .uniform_evaluator import KLUniformMetric
 
 __all__ = ["Evaluator"]
 
@@ -61,6 +64,23 @@ class Evaluator:
                     out[f"eval/{label}/CrossEntropyLoss"] = loss.item()
                     out[f"eval/{label}/Perplexity"] = torch.exp(loss).item()
             return out
+        elif self.type == EvaluatorType.bg:
+            # bigram
+            assert isinstance(self.eval_metric, KLBigramMetric)
+            value = self.eval_metric.compute().item()
+            key = f"eval/{self.label}_{self.eval_metric.metric_type}"
+            return {key: value}
+        elif self.type == EvaluatorType.ug:
+            # unigram
+            assert isinstance(self.eval_metric, KLUnigramMetric)
+            value = self.eval_metric.compute().item()
+            key = f"eval/{self.label}_{self.eval_metric.metric_type}"
+            return {key: value}
+        elif self.type == EvaluatorType.uf:
+            assert isinstance(self.eval_metric, KLUniformMetric)
+            value = self.eval_metric.compute().item()
+            key = f"eval/{self.label}_{self.eval_metric.metric_type}"
+            return {key: value}
         else:
             raise ValueError(f"Unexpected evaluator type '{self.type}'")
 
@@ -81,5 +101,17 @@ class Evaluator:
                 else:
                     metric = self.eval_metric
                 metric.update(instance_loss)
+        elif self.type == EvaluatorType.bg:
+            # bigram
+            assert isinstance(self.eval_metric, KLBigramMetric)
+            self.eval_metric.update(batch, logits)
+        elif self.type == EvaluatorType.ug:
+            # unigram
+            assert isinstance(self.eval_metric, KLUnigramMetric)
+            self.eval_metric.update(batch, logits)
+        elif self.type == EvaluatorType.uf:
+            # uniform
+            assert isinstance(self.eval_metric, KLUniformMetric)
+            self.eval_metric.update(batch, logits)
         else:
             raise ValueError(f"Unexpected evaluator type '{self.type}'")
