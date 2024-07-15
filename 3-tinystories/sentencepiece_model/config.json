@@ -1,0 +1,1 @@
+{"model_type": "bpe", "vocab_size": 100000, "model_file": "spiece.model", "special_tokens": ["<unk>", "<s>", "</s>"]}

@@ -3,6 +3,7 @@ from typing import Any, Dict
 import torch
 import torch.nn.functional as F
 from torchmetrics import Metric
+from .ngram_preprocess_batch import ngram_preprocess_batch
 
 
 class KLUniformMetric(Metric):
@@ -12,7 +13,7 @@ class KLUniformMetric(Metric):
     def __init__(self, dim=10) -> None:
         super().__init__(sync_on_compute=True)
 
-        self.dim = 3
+        self.dim = dim
         self.add_state("kl_divs", default=[], dist_reduce_fx=None)
 
     def reset(
@@ -21,11 +22,7 @@ class KLUniformMetric(Metric):
         self.kl_divs = []
 
     def update(self, batch: Dict[str, Any], logits: torch.Tensor):
-        # save the batch info (inputs and logits)
-        # temp fix for key name in batch
-        if "input_ids" not in batch:
-            assert "inputs" in batch
-            batch["input_ids"] = batch["inputs"]
+        batch = ngram_preprocess_batch(batch)
 
         # train a bigram model
         inputs = batch["input_ids"]

@@ -228,7 +228,10 @@ class Trainer:
 
     @property
     def batches_per_epoch(self) -> int:
-        return self.dataset.total_size // self.cfg.global_train_batch_size
+        if self.cfg.custom_train_dataset:
+            return self.cfg.custom_data_config.epoch_size // self.cfg.global_train_batch_size
+        else:
+            return self.dataset.total_size // self.cfg.global_train_batch_size
 
     @property
     def max_epochs(self) -> int:
@@ -827,7 +830,7 @@ class Trainer:
         # Run forward pass.
         with torch.no_grad():  # NOTE: 'torch.inference_mode()' doesn't work with 'torch.compile()'.
             ce_loss, logits = self.eval_batch(batch)
-
+        
         # Update metrics.
         evaluator.update_metrics(
             batch, ce_loss, logits
@@ -1245,9 +1248,10 @@ class Trainer:
                     log.info("Training epoch complete")
                     self.epoch = epoch + 1
                     self.global_train_examples_seen_this_epoch = 0
-                    self.dataset.start_index = 0
-                    if self.epoch < self.max_epochs:
-                        self.dataset.reshuffle()
+                    if not self.cfg.custom_train_dataset:
+                        self.dataset.start_index = 0
+                        if self.epoch < self.max_epochs:
+                            self.dataset.reshuffle()
                     continue
 
                 break

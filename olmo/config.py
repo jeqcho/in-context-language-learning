@@ -603,9 +603,9 @@ class DataConfig(BaseConfig):
 class EvaluatorType(StrEnum):
     downstream = "downstream"
     lm = "lm"
-    bg = "bg" # bigram
-    ug = "ug" # unigram
-    uf = "uf" # uniform
+    bg = "bg"  # bigram
+    ug = "ug"  # unigram
+    uf = "uf"  # uniform
 
 
 @dataclass
@@ -840,10 +840,61 @@ class ActivationCheckpointingStrategy(StrEnum):
     """
 
 
+class CustomDataType(StrEnum):
+    markov = "markov"
+
+
+@dataclass
+class MarkovDatasetConfig(BaseConfig):
+    num_states: Optional[int] = 3
+    """
+    Number of states in a Markov chain
+    """
+
+    seq_len: Optional[int] = 1000
+    """
+    Length of the sequence
+    """
+
+    vocab_size: Optional[int] = 500
+    """
+    Token ids will be from [0, vocab_size)
+    """
+
+
+@dataclass
+class CustomDataConfig(BaseConfig):
+    custom_data_type: CustomDataType = CustomDataType.markov
+    """
+    The type of custom data to use.
+    """
+
+    epoch_size: int = int(1e6)
+    """
+    Number of instances in one epoch
+    """
+
+    markov_dataset_config: MarkovDatasetConfig = field(default_factory=MarkovDatasetConfig)
+    """
+    Markov dataset configuration
+    """
+
+
 @dataclass
 class TrainConfig(BaseConfig):
     """
     OLMo training configuration.
+    """
+
+    custom_train_dataset: bool = False
+    """
+    If ``True``, use build_custom_dataloader in scripts/train.py.
+    For online training data generation
+    """
+
+    custom_data_config: CustomDataConfig = field(default_factory=CustomDataConfig)
+    """
+    Custom data config e.g. Markov chains
     """
 
     run_name: Optional[str] = None

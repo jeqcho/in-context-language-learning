@@ -10,6 +10,8 @@ from ..torch_util import barrier, get_global_rank, get_world_size, is_distribute
 from .collator import DataCollator
 from .iterable_dataset import IterableDataset
 from .memmap_dataset import MemMapDataset
+from .markov_dataset import MarkovDataset
+
 
 __all__ = ["MemMapDataset", "DataCollator", "IterableDataset", "build_eval_dataloader", "build_train_dataloader"]
 
@@ -118,6 +120,38 @@ def build_train_dataloader(
             fs_local_rank=fs_local_rank,
             work_dir=work_dir,
         ),
+        batch_size=train_config.device_train_batch_size,
+        drop_last=train_config.data.drop_last,
+        collate_fn=collator,
+        num_workers=train_config.data.num_workers,
+        pin_memory=train_config.data.pin_memory,
+        prefetch_factor=None if train_config.data.num_workers == 0 else train_config.data.prefetch_factor,
+        persistent_workers=False if train_config.data.num_workers == 0 else train_config.data.persistent_workers,
+        timeout=train_config.data.timeout,
+    )
+
+
+def build_custom_dataloader(
+    train_config: TrainConfig
+) -> DataLoader:
+    assert train_config.device_train_batch_size is not None
+    assert train_config.custom_train_dataset
+    collator = DataCollator(
+        pad_direction=train_config.data.pad_direction, pad_token_id=train_config.model.pad_token_id
+    )
+    dataset = MarkovDataset(markov_dataset_config=train_config.custom_data_config.markov_dataset_config, 
+                            epoch_size=train_config.custom_data_config.epoch_size)
+    work_dir = Path(train_config.save_folder) / "train_data"
+    if get_global_rank() == 0:
+        if work_dir.is_dir() and not train_config.save_overwrite:
+            raise OLMoConfigurationError(
+                "train data working directory already exists, use --save_overwrite to overwrite"
+            )
+        else:
+            work_dir.mkdir(exist_ok=True, parents=True)
+    barrier()
+    return DataLoader(
+        dataset,
         batch_size=train_config.device_train_batch_size,
         drop_last=train_config.data.drop_last,
         collate_fn=collator,
