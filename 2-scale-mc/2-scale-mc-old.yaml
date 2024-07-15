@@ -60,12 +60,12 @@ scheduler:
   alpha_f: 0.1
 
 data:
-  # paths: ${path.glob:/n/holyscratch01/sham_lab/summer_2024/datasets/special_markov/input_ids.npy}
+  paths: ${path.glob:/n/holyscratch01/sham_lab/summer_2024/datasets/special_markov/input_ids.npy}
   pad_direction: right
-  num_workers: 8
+  num_workers: 2
   drop_last: true
   pin_memory: true
-  prefetch_factor: 32
+  prefetch_factor: 16
   persistent_workers: true
   timeout: 0
 
@@ -107,6 +107,7 @@ evaluators:
     type: bg
     subset_num_batches: 10
     data:
+      paths: ${path.glob:/n/holyscratch01/sham_lab/summer_2024/markov_dataset_1M.npy}
       num_workers: 1
       drop_last: true
       pin_memory: true
@@ -116,6 +117,7 @@ evaluators:
     type: ug
     subset_num_batches: 10
     data:
+      paths: ${path.glob:/n/holyscratch01/sham_lab/summer_2024/markov_dataset_1M.npy}
       num_workers: 1
       drop_last: true
       pin_memory: true
@@ -125,6 +127,37 @@ evaluators:
     type: uf
     subset_num_batches: 10
     data:
+      paths: ${path.glob:/n/holyscratch01/sham_lab/summer_2024/markov_dataset_1M.npy}
+      num_workers: 1
+      drop_last: true
+      pin_memory: true
+      persistent_workers: true
+      prefetch_factor: 4
+  - label: deter-bigram-validation
+    type: bg
+    subset_num_batches: 10
+    data:
+      paths: ${path.glob:/n/holyscratch01/sham_lab/summer_2024/datasets/deterministic_markov/input_ids.npy}
+      num_workers: 1
+      drop_last: true
+      pin_memory: true
+      persistent_workers: true
+      prefetch_factor: 4
+  - label: deter-unigram-validation
+    type: ug
+    subset_num_batches: 10
+    data:
+      paths: ${path.glob:/n/holyscratch01/sham_lab/summer_2024/datasets/deterministic_markov/input_ids.npy}
+      num_workers: 1
+      drop_last: true
+      pin_memory: true
+      persistent_workers: true
+      prefetch_factor: 4
+  - label: deter-uniform-validation
+    type: uf
+    subset_num_batches: 10
+    data:
+      paths: ${path.glob:/n/holyscratch01/sham_lab/summer_2024/datasets/deterministic_markov/input_ids.npy}
       num_workers: 1
       drop_last: true
       pin_memory: true
