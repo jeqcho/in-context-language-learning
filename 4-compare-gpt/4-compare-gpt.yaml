@@ -37,8 +37,8 @@ model:
   include_bias: true
   vocab_size: 500
   embedding_size: 512
-  eos_token_id: 511
-  pad_token_id: 512
+  eos_token_id: 498
+  pad_token_id: 499
   init_device: meta
   init_std: 0.02
 
@@ -86,8 +86,8 @@ load_path: null
 
 # max_duration: 476837  # 2T tokens
 max_duration: 10ep  # 20B tokens
-global_train_batch_size: 256
-device_train_microbatch_size: 64
+global_train_batch_size: 1024
+device_train_microbatch_size: 256
 
 precision: amp_bf16
   
@@ -105,7 +105,7 @@ evaluators:
   #########################
   - label: mc-bigram-validation
     type: bg
-    subset_num_batches: 10
+    subset_num_batches: 2
     data:
       paths: ${path.glob:/n/holyscratch01/sham_lab/summer_2024/markov_dataset_1M.npy}
       num_workers: 1
@@ -115,7 +115,7 @@ evaluators:
       prefetch_factor: 4
   - label: mc-unigram-validation
     type: ug
-    subset_num_batches: 10
+    subset_num_batches: 2
     data:
       paths: ${path.glob:/n/holyscratch01/sham_lab/summer_2024/markov_dataset_1M.npy}
       num_workers: 1
@@ -125,39 +125,9 @@ evaluators:
       prefetch_factor: 4
   - label: mc-uniform-validation
     type: uf
-    subset_num_batches: 10
+    subset_num_batches: 2
     data:
       paths: ${path.glob:/n/holyscratch01/sham_lab/summer_2024/markov_dataset_1M.npy}
-      num_workers: 1
-      drop_last: true
-      pin_memory: true
-      persistent_workers: true
-      prefetch_factor: 4
-  - label: deter-bigram-validation
-    type: bg
-    subset_num_batches: 10
-    data:
-      paths: ${path.glob:/n/holyscratch01/sham_lab/summer_2024/datasets/deterministic_markov/input_ids.npy}
-      num_workers: 1
-      drop_last: true
-      pin_memory: true
-      persistent_workers: true
-      prefetch_factor: 4
-  - label: deter-unigram-validation
-    type: ug
-    subset_num_batches: 10
-    data:
-      paths: ${path.glob:/n/holyscratch01/sham_lab/summer_2024/datasets/deterministic_markov/input_ids.npy}
-      num_workers: 1
-      drop_last: true
-      pin_memory: true
-      persistent_workers: true
-      prefetch_factor: 4
-  - label: deter-uniform-validation
-    type: uf
-    subset_num_batches: 10
-    data:
-      paths: ${path.glob:/n/holyscratch01/sham_lab/summer_2024/datasets/deterministic_markov/input_ids.npy}
       num_workers: 1
       drop_last: true
       pin_memory: true

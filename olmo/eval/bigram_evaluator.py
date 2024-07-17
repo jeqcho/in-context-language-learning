@@ -26,6 +26,7 @@ class KLBigramMetric(Metric):
         self.kl_divs = []
 
     def update(self, batch: Dict[str, Any], logits: torch.Tensor):
+
         batch = ngram_preprocess_batch(batch)
 
         inputs = batch["input_ids"]

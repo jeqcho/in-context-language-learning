@@ -14,7 +14,7 @@ class KLUnigramMetric(Metric):
     def __init__(self, dim=10) -> None:
         super().__init__(sync_on_compute=True)
 
-        self.dim = 3
+        self.dim = dim
         self.add_state("kl_divs", default=[], dist_reduce_fx=None)
 
     def reset(

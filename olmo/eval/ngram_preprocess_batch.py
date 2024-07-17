@@ -13,8 +13,9 @@ def ngram_preprocess_batch(batch: Dict[str, Any]):
     chosen_symbols = np.array([x['chosen_symbols'] for x in batch['metadata']])
     # convert the inputs into [0, num_states)
     inputs_copy = inputs.clone().detach()
-    for idx, symbol in enumerate(chosen_symbols):
-        inputs_copy[inputs == symbol] = idx
+    for row_id in range(inputs.size(0)):
+        for idx, symbol in enumerate(chosen_symbols[row_id]):
+            inputs_copy[row_id][inputs[row_id] == symbol] = idx
     batch["input_ids"] = inputs_copy.clone().detach()
 
     return batch
