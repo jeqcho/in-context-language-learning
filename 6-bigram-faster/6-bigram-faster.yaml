@@ -1,4 +1,4 @@
-run_name: batched-bigram-model
+run_name: cpu-np-full-bigram-model
 seed: 42
 dry_run: false
 distributed_strategy: fsdp
