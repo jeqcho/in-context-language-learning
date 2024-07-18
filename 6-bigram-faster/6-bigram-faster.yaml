@@ -1,4 +1,4 @@
-run_name: baseline-bigram
+run_name: batched-bigram-model
 seed: 42
 dry_run: false
 distributed_strategy: fsdp

@@ -1,5 +1,6 @@
 """A bigram model (designed for evaluating against other models with KL divergence)"""
 import numpy as np
+import torch
 
 class BigramModel:
     def __init__(self, dim):
@@ -22,7 +23,38 @@ class BigramModel:
         self.transition_matrix[prev_token][current_token] += 1
         self.row_sum[prev_token] += 1
         self.transition_matrix[prev_token] /= self.row_sum[prev_token] + self.dim
+    
+    def load(self, instance):
+        assert max(instance) < self.dim, f"max(instance) out of range. max(instance): {max(instance)}, dim: {self.dim}"
+
+        # initialize as frequency matrix
+        self.transition_matrix = np.full(shape=(self.dim, self.dim), fill_value=1, dtype='float64')
+        for pre, nex in zip(instance[:-1], instance[1:]):
+            self.transition_matrix[pre][nex] += 1
+        # normalize so that entries in any given row sums up to 1
+        self.transition_matrix /= np.sum(self.transition_matrix,axis=1).reshape(-1,1)
 
     
     def get_transition_matrix(self):
         return self.transition_matrix
+
+
+class BatchedBigramModel:
+    def __init__(self, dim):
+        self.dim = dim
+    
+    def load(self, batch):
+        mx = torch.max(batch)
+        assert mx < self.dim, f"max(batch) out of range. max(batch): {mx}, dim: {self.dim}"
+
+        # initialize as frequency matrix
+        self.transition_matrix = torch.full((batch.shape[0], self.dim, self.dim), fill_value=1, dtype=torch.float64).to(batch.device)
+        for pre, nex in zip(batch[:, :-1].T, batch[:, 1:].T):
+            # pre (BATCH_SIZE, ) and nex (BATCH_SIZE, )
+            self.transition_matrix[torch.arange(batch.shape[0]), pre, nex] += 1
+        
+        self.transition_matrix /= torch.sum(self.transition_matrix,axis=2).reshape(batch.shape[0], -1, 1)
+
+        # return the probabilities for the final token
+        return self.transition_matrix[torch.arange(batch.shape[0]), batch[:,-1]]
+

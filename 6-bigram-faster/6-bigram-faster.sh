@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=4-compare-gpt
+#SBATCH --job-name=6-bigram-faster
 #SBATCH --account=kempner_sham_lab
 #SBATCH --partition=kempner_h100
 #SBATCH --nodes=1
@@ -19,4 +19,4 @@ module load python
 # Activate conda environment (optional)
 mamba activate olmo2
 
-torchrun --master_port=25685 --nproc_per_node=1 ../scripts/train.py 6-bigram-faster.yaml
+torchrun --master_port=25689 --nproc_per_node=1 ../scripts/train.py 6-bigram-faster.yaml --save_overwrite=true

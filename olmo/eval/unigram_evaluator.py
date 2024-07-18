@@ -30,17 +30,24 @@ class KLUnigramMetric(Metric):
         unigram_model = UnigramModel(dim=self.dim)
 
         # get the Q and P distribution for KL-divergence
+        ps = []
         for i in range(len(inputs)):
             unigram_model.load(inputs[i])
             # get probabilities of the next-token prediction by bigram
             unigram_probs = unigram_model.get_probability_table()
             # focus on the first few relevant ones (non special tokens)
-            current_logits = logits[i][-1][:self.dim]
-            q = F.log_softmax(current_logits, dim=0)
-            p = torch.tensor(unigram_probs).to(q.device)
+            p = torch.tensor(unigram_probs).to(logits.device)
 
-            self.kl_divs.append(F.kl_div(q, p, reduction="sum"))
+            ps.append(p)
+
             unigram_model.reset()
+        
+        # get all instances in the batch, last token, only consider first self.dim (vocab_size) logits
+        current_logits = logits[:, -1, : self.dim]
+        qs = F.log_softmax(current_logits, dim=1)
+        ps = torch.stack(ps)
+        self.kl_divs.append(F.kl_div(qs, ps, reduction="batchmean"))
+
 
     def compute(self) -> torch.Tensor:
         kl_div = torch.mean(torch.tensor(self.kl_divs))
