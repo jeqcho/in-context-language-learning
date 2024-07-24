@@ -842,6 +842,7 @@ class ActivationCheckpointingStrategy(StrEnum):
 
 class CustomDataType(StrEnum):
     markov = "markov"
+    hmm = "hmm"
 
 
 @dataclass
@@ -861,6 +862,23 @@ class MarkovDatasetConfig(BaseConfig):
     Token ids will be from [0, vocab_size)
     """
 
+@dataclass
+class HMMDatasetConfig(BaseConfig):
+    num_symbols: Optional[int] = 3
+    """
+    Number of states (possible unique emissions) in a HMM chain
+    """
+
+    seq_len: Optional[int] = 1000
+    """
+    Length of the sequence
+    """
+
+    num_hidden_states: Optional[int] = 500
+    """
+    Number of hidden states 
+    """
+
 
 @dataclass
 class CustomDataConfig(BaseConfig):
@@ -877,6 +895,11 @@ class CustomDataConfig(BaseConfig):
     markov_dataset_config: MarkovDatasetConfig = field(default_factory=MarkovDatasetConfig)
     """
     Markov dataset configuration
+    """
+
+    hmm_dataset_config: HMMDatasetConfig = field(default_factory=HMMDatasetConfig)
+    """
+    HMM dataset configuration
     """
 
 

@@ -4,13 +4,14 @@ from typing import Any, Dict, List, Optional, cast
 from torch.utils.data import DataLoader, DistributedSampler
 
 from ..aliases import PathOrStr
-from ..config import DataConfig, TrainConfig
+from ..config import DataConfig, TrainConfig, CustomDataType
 from ..exceptions import OLMoConfigurationError
 from ..torch_util import barrier, get_global_rank, get_world_size, is_distributed
 from .collator import DataCollator
 from .iterable_dataset import IterableDataset
 from .memmap_dataset import MemMapDataset
 from .markov_dataset import MarkovDataset
+from .hmm_dataset import HMMDataset
 
 
 __all__ = ["MemMapDataset", "DataCollator", "IterableDataset", "build_eval_dataloader", "build_train_dataloader"]
@@ -139,8 +140,13 @@ def build_custom_dataloader(
     collator = DataCollator(
         pad_direction=train_config.data.pad_direction, pad_token_id=train_config.model.pad_token_id
     )
-    dataset = MarkovDataset(markov_dataset_config=train_config.custom_data_config.markov_dataset_config, 
+    if train_config.custom_data_config.custom_data_type == CustomDataType.markov:
+        dataset = MarkovDataset(markov_dataset_config=train_config.custom_data_config.markov_dataset_config, 
                             epoch_size=train_config.custom_data_config.epoch_size)
+    elif train_config.custom_data_config.custom_data_type == CustomDataType.hmm:
+        dataset = HMMDataset(hmm_dataset_config=train_config.custom_data_config.hmm_dataset_config, epoch_size=train_config.custom_data_config.epoch_size)
+    else:
+        raise NotImplementedError(f"Unrecognized custom data type {train_config.custom_data_config.custom_data_type}")
     work_dir = Path(train_config.save_folder) / "train_data"
     if get_global_rank() == 0:
         if work_dir.is_dir() and not train_config.save_overwrite:

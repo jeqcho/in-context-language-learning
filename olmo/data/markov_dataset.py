@@ -1,4 +1,3 @@
-import torch
 from torch.utils.data import Dataset
 from olmo.config import MarkovDatasetConfig
 from olmo.data.markov_chain_generator import generate_markov_chain

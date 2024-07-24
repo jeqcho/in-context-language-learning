@@ -80,5 +80,7 @@ def generate_markov_chain(num_symbols, seq_len, deterministic=False, doubly_stoc
     if vocab_size is not None:
         chosen_symbols = np.random.choice(range(vocab_size), num_symbols, replace=False)
         inp = [chosen_symbols[x] for x in inp]
+    else:
+        chosen_symbols = list(range(num_symbols))
 
     return t.tensor(inp, dtype=int), transition_matrix, chosen_symbols
