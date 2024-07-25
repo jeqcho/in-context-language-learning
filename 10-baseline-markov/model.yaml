@@ -13,7 +13,7 @@ model:
   n_layers: 2
   mlp_ratio: 1
   alibi: false
-  rope: false
+  rope: true
   alibi_bias_max: 8.0
   flash_attention: false
   attention_dropout: 0.0
@@ -24,7 +24,7 @@ model:
   activation_type: swiglu
   residual_dropout: 0.0
   embedding_dropout: 0.0
-  max_sequence_length: 500
+  max_sequence_length: 150
   include_bias: true
   vocab_size: 8
   embedding_size: 128
@@ -40,7 +40,7 @@ compile: null  # causes instability on AMD GPUs
 optimizer:
   name: adamw
   learning_rate: 1.0e-3
-  weight_decay: 0.01
+  weight_decay: 0
   betas:
   - 0.9
   - 0.95
@@ -60,11 +60,11 @@ data:
   timeout: 0
   custom_train_dataset: true
   custom_data_config:
-    custom_data_type: hmm
-    hmm_dataset_config:
-      num_hidden_states: 5
-      seq_len: 500
-      num_symbols: 5
+    custom_data_type: markov
+    markov_dataset_config:
+      num_states: 3
+      seq_len: 150
+      vocab_size: 3
 
 tokenizer:
   identifier: ../olmo_data/tokenizers/8-token-tokenizer.json
@@ -84,7 +84,7 @@ load_path: null
 # max_duration: 476837  # 2T tokens
 max_duration: 10ep  # 20B tokens
 global_train_batch_size: 1024
-device_train_microbatch_size: 256
+device_train_microbatch_size: 64
 
 precision: amp_bf16
   
@@ -93,7 +93,7 @@ max_grad_norm: 1.0
 speed_monitor:
   window_size: 20
 
-eval_interval: 50
+eval_interval: 250
 eval_subset_num_batches: -1
 device_eval_batch_size: ${device_train_microbatch_size}
 evaluators:
@@ -111,11 +111,11 @@ evaluators:
       prefetch_factor: 4
       custom_train_dataset: true
       custom_data_config:
-        custom_data_type: hmm
-        hmm_dataset_config:
-          num_hidden_states: 5
-          seq_len: 500
-          num_symbols: 5
+        custom_data_type: markov
+        markov_dataset_config:
+          num_states: 3
+          seq_len: 150
+          vocab_size: 3
   - label: mc-unigram-validation
     type: ug
     subset_num_batches: 2
@@ -127,11 +127,11 @@ evaluators:
       prefetch_factor: 4
       custom_train_dataset: true
       custom_data_config:
-        custom_data_type: hmm
-        hmm_dataset_config:
-          num_hidden_states: 5
-          seq_len: 500
-          num_symbols: 5
+        custom_data_type: markov
+        markov_dataset_config:
+          num_states: 3
+          seq_len: 150
+          vocab_size: 3
   - label: mc-uniform-validation
     type: uf
     subset_num_batches: 2
@@ -143,11 +143,11 @@ evaluators:
       prefetch_factor: 4
       custom_train_dataset: true
       custom_data_config:
-        custom_data_type: hmm
-        hmm_dataset_config:
-          num_hidden_states: 5
-          seq_len: 500
-          num_symbols: 5
+        custom_data_type: markov
+        markov_dataset_config:
+          num_states: 3
+          seq_len: 150
+          vocab_size: 3
   # - label: mc-validation-100k
   #   subset_num_batches: 10
   #   data:
