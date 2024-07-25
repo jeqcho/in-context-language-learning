@@ -119,8 +119,8 @@ def main(cfg: TrainConfig) -> None:
     seed_all(cfg.seed)
 
     # Construct data loader.
-    if cfg.custom_train_dataset:
-        train_loader = build_custom_dataloader(cfg)
+    if cfg.data.custom_train_dataset:
+        train_loader = build_custom_dataloader(cfg, cfg.data)
     else:
         train_loader = build_train_dataloader(cfg)
 

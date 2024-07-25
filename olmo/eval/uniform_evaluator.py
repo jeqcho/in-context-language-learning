@@ -24,15 +24,11 @@ class KLUniformMetric(Metric):
     def update(self, batch: Dict[str, Any], logits: torch.Tensor):
         batch = ngram_preprocess_batch(batch)
 
-        # train a bigram model
-        inputs = batch["input_ids"]
-
         # get the Q and P distribution for KL-divergence
-        for i in range(len(inputs)):
-            current_logits = logits[i][-1][:self.dim]
-            q = F.log_softmax(current_logits, dim=0)
-            p = torch.tensor([1/self.dim]*self.dim).to(q.device)
-            self.kl_divs.append(F.kl_div(q, p, reduction="sum"))
+        ps = torch.full(size=(logits.shape[0], self.dim), fill_value=1/self.dim).to(logits.device)
+        current_logits = logits[:, -1, : self.dim]
+        qs = F.log_softmax(current_logits, dim=1)
+        self.kl_divs.append(F.kl_div(qs, ps, reduction="batchmean"))
 
     def compute(self) -> torch.Tensor:
         kl_div = torch.mean(torch.tensor(self.kl_divs))

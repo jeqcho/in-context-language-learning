@@ -27,7 +27,6 @@ class KLUnigramMetric(Metric):
 
         # train a bigram model
         inputs = batch["input_ids"]
-        unigram_model = UnigramModel(dim=self.dim)
 
         # get the Q and P distribution for KL-divergence
         ps = []

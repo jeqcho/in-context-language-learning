@@ -1,4 +1,4 @@
-run_name: faster-hmm
+run_name: test-all-ngrams
 dry_run: false
 distributed_strategy: fsdp
 
@@ -6,14 +6,6 @@ wandb:
   name: ${run_name}
   project: mc-2
   entity: jchooi
-
-custom_train_dataset: true
-custom_data_config:
-  custom_data_type: hmm
-  hmm_dataset_config:
-    num_hidden_states: 10
-    seq_len: 500
-    num_symbols: 3
 
 model:
   d_model: 500
@@ -34,10 +26,10 @@ model:
   embedding_dropout: 0.0
   max_sequence_length: 500
   include_bias: true
-  vocab_size: 500
-  embedding_size: 512
-  eos_token_id: 498
-  pad_token_id: 499
+  vocab_size: 8
+  embedding_size: 128
+  eos_token_id: 6
+  pad_token_id: 7
   init_device: meta
   init_std: 0.02
 
@@ -66,9 +58,16 @@ data:
   prefetch_factor: 32
   persistent_workers: true
   timeout: 0
+  custom_train_dataset: true
+  custom_data_config:
+    custom_data_type: hmm
+    hmm_dataset_config:
+      num_hidden_states: 5
+      seq_len: 500
+      num_symbols: 5
 
 tokenizer:
-  identifier: ../olmo_data/tokenizers/512-token-tokenizer.json
+  identifier: ../olmo_data/tokenizers/8-token-tokenizer.json
   truncate_direction: right
 
 save_folder: /n/holyscratch01/sham_lab/summer_2024/checkpoints/${run_name}-${oc.env:SLURM_JOB_ID}
@@ -110,6 +109,13 @@ evaluators:
       pin_memory: true
       persistent_workers: true
       prefetch_factor: 4
+      custom_train_dataset: true
+      custom_data_config:
+        custom_data_type: hmm
+        hmm_dataset_config:
+          num_hidden_states: 5
+          seq_len: 500
+          num_symbols: 5
   - label: mc-unigram-validation
     type: ug
     subset_num_batches: 2
@@ -119,6 +125,13 @@ evaluators:
       pin_memory: true
       persistent_workers: true
       prefetch_factor: 4
+      custom_train_dataset: true
+      custom_data_config:
+        custom_data_type: hmm
+        hmm_dataset_config:
+          num_hidden_states: 5
+          seq_len: 500
+          num_symbols: 5
   - label: mc-uniform-validation
     type: uf
     subset_num_batches: 2
@@ -128,6 +141,13 @@ evaluators:
       pin_memory: true
       persistent_workers: true
       prefetch_factor: 4
+      custom_train_dataset: true
+      custom_data_config:
+        custom_data_type: hmm
+        hmm_dataset_config:
+          num_hidden_states: 5
+          seq_len: 500
+          num_symbols: 5
   # - label: mc-validation-100k
   #   subset_num_batches: 10
   #   data:

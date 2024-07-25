@@ -1,4 +1,4 @@
-run_name: cpu-np-full-bigram-model
+run_name: faster-unigram
 seed: 42
 dry_run: false
 distributed_strategy: fsdp

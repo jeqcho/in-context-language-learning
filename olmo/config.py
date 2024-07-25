@@ -569,6 +569,70 @@ class InstanceFilterConfig(BaseConfig):
     repetition_max_count: int = 32
 
 
+class CustomDataType(StrEnum):
+    markov = "markov"
+    hmm = "hmm"
+
+
+@dataclass
+class MarkovDatasetConfig(BaseConfig):
+    num_states: Optional[int] = 3
+    """
+    Number of states in a Markov chain
+    """
+
+    seq_len: Optional[int] = 1000
+    """
+    Length of the sequence
+    """
+
+    vocab_size: Optional[int] = 500
+    """
+    Token ids will be from [0, vocab_size)
+    """
+
+@dataclass
+class HMMDatasetConfig(BaseConfig):
+    num_symbols: Optional[int] = 3
+    """
+    Number of states (possible unique emissions) in a HMM chain
+    """
+
+    seq_len: Optional[int] = 1000
+    """
+    Length of the sequence
+    """
+
+    num_hidden_states: Optional[int] = 500
+    """
+    Number of hidden states 
+    """
+
+
+@dataclass
+class CustomDataConfig(BaseConfig):
+    custom_data_type: CustomDataType = CustomDataType.markov
+    """
+    The type of custom data to use.
+    """
+
+    epoch_size: int = int(1e6)
+    """
+    Number of instances in one epoch
+    """
+
+    markov_dataset_config: MarkovDatasetConfig = field(default_factory=MarkovDatasetConfig)
+    """
+    Markov dataset configuration
+    """
+
+    hmm_dataset_config: HMMDatasetConfig = field(default_factory=HMMDatasetConfig)
+    """
+    HMM dataset configuration
+    """
+
+
+
 @dataclass
 class DataConfig(BaseConfig):
     paths: Optional[List[str]] = None
@@ -586,6 +650,18 @@ class DataConfig(BaseConfig):
     seed: Optional[int] = None
     instance_filter: Optional[InstanceFilterConfig] = None
 
+    custom_train_dataset: bool = False
+    """
+    If ``True``, use build_custom_dataloader in scripts/train.py.
+    For online training data generation
+    """
+
+    custom_data_config: CustomDataConfig = field(default_factory=CustomDataConfig)
+    """
+    Custom data config e.g. Markov chains
+    """
+
+
     @property
     def effective_memmap_dtype(self):
         if self.memmap_dtype == "uint8":
@@ -598,6 +674,7 @@ class DataConfig(BaseConfig):
             return np.uint64
         # default to uint16 if not set
         return np.uint16
+
 
 
 class EvaluatorType(StrEnum):
@@ -840,84 +917,11 @@ class ActivationCheckpointingStrategy(StrEnum):
     """
 
 
-class CustomDataType(StrEnum):
-    markov = "markov"
-    hmm = "hmm"
-
-
-@dataclass
-class MarkovDatasetConfig(BaseConfig):
-    num_states: Optional[int] = 3
-    """
-    Number of states in a Markov chain
-    """
-
-    seq_len: Optional[int] = 1000
-    """
-    Length of the sequence
-    """
-
-    vocab_size: Optional[int] = 500
-    """
-    Token ids will be from [0, vocab_size)
-    """
-
-@dataclass
-class HMMDatasetConfig(BaseConfig):
-    num_symbols: Optional[int] = 3
-    """
-    Number of states (possible unique emissions) in a HMM chain
-    """
-
-    seq_len: Optional[int] = 1000
-    """
-    Length of the sequence
-    """
-
-    num_hidden_states: Optional[int] = 500
-    """
-    Number of hidden states 
-    """
-
-
-@dataclass
-class CustomDataConfig(BaseConfig):
-    custom_data_type: CustomDataType = CustomDataType.markov
-    """
-    The type of custom data to use.
-    """
-
-    epoch_size: int = int(1e6)
-    """
-    Number of instances in one epoch
-    """
-
-    markov_dataset_config: MarkovDatasetConfig = field(default_factory=MarkovDatasetConfig)
-    """
-    Markov dataset configuration
-    """
-
-    hmm_dataset_config: HMMDatasetConfig = field(default_factory=HMMDatasetConfig)
-    """
-    HMM dataset configuration
-    """
-
 
 @dataclass
 class TrainConfig(BaseConfig):
     """
     OLMo training configuration.
-    """
-
-    custom_train_dataset: bool = False
-    """
-    If ``True``, use build_custom_dataloader in scripts/train.py.
-    For online training data generation
-    """
-
-    custom_data_config: CustomDataConfig = field(default_factory=CustomDataConfig)
-    """
-    Custom data config e.g. Markov chains
     """
 
     run_name: Optional[str] = None

@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional, cast
 from torch.utils.data import DataLoader, DistributedSampler
 
 from ..aliases import PathOrStr
-from ..config import DataConfig, TrainConfig, CustomDataType
+from ..config import DataConfig, TrainConfig, CustomDataType, CustomDataConfig
 from ..exceptions import OLMoConfigurationError
 from ..torch_util import barrier, get_global_rank, get_world_size, is_distributed
 from .collator import DataCollator
@@ -132,21 +132,24 @@ def build_train_dataloader(
     )
 
 
-def build_custom_dataloader(
-    train_config: TrainConfig
-) -> DataLoader:
+def build_custom_dataloader(train_config: TrainConfig, data_config: DataConfig) -> DataLoader:
     assert train_config.device_train_batch_size is not None
-    assert train_config.custom_train_dataset
-    collator = DataCollator(
-        pad_direction=train_config.data.pad_direction, pad_token_id=train_config.model.pad_token_id
-    )
-    if train_config.custom_data_config.custom_data_type == CustomDataType.markov:
-        dataset = MarkovDataset(markov_dataset_config=train_config.custom_data_config.markov_dataset_config, 
-                            epoch_size=train_config.custom_data_config.epoch_size)
-    elif train_config.custom_data_config.custom_data_type == CustomDataType.hmm:
-        dataset = HMMDataset(hmm_dataset_config=train_config.custom_data_config.hmm_dataset_config, epoch_size=train_config.custom_data_config.epoch_size)
+    assert data_config.custom_train_dataset
+    collator = DataCollator(pad_direction=data_config.pad_direction, pad_token_id=train_config.model.pad_token_id)
+    if data_config.custom_data_config.custom_data_type == CustomDataType.markov:
+        dataset = MarkovDataset(
+            markov_dataset_config=data_config.custom_data_config.markov_dataset_config,
+            epoch_size=data_config.custom_data_config.epoch_size,
+        )
+    elif data_config.custom_data_config.custom_data_type == CustomDataType.hmm:
+        dataset = HMMDataset(
+            hmm_dataset_config=data_config.custom_data_config.hmm_dataset_config,
+            epoch_size=data_config.custom_data_config.epoch_size,
+        )
     else:
-        raise NotImplementedError(f"Unrecognized custom data type {train_config.custom_data_config.custom_data_type}")
+        raise NotImplementedError(
+            f"Unrecognized custom data type {data_config.custom_data_config.custom_data_type}"
+        )
     work_dir = Path(train_config.save_folder) / "train_data"
     if get_global_rank() == 0:
         if work_dir.is_dir() and not train_config.save_overwrite:
@@ -159,11 +162,11 @@ def build_custom_dataloader(
     return DataLoader(
         dataset,
         batch_size=train_config.device_train_batch_size,
-        drop_last=train_config.data.drop_last,
+        drop_last=data_config.drop_last,
         collate_fn=collator,
-        num_workers=train_config.data.num_workers,
-        pin_memory=train_config.data.pin_memory,
-        prefetch_factor=None if train_config.data.num_workers == 0 else train_config.data.prefetch_factor,
-        persistent_workers=False if train_config.data.num_workers == 0 else train_config.data.persistent_workers,
-        timeout=train_config.data.timeout,
+        num_workers=data_config.num_workers,
+        pin_memory=data_config.pin_memory,
+        prefetch_factor=None if data_config.num_workers == 0 else data_config.prefetch_factor,
+        persistent_workers=False if data_config.num_workers == 0 else data_config.persistent_workers,
+        timeout=data_config.timeout,
     )

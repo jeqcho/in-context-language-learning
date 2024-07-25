@@ -1,3 +1,4 @@
+#%%
 import torch
 import numpy as np
 from .markov_chain_generator import generate_markov_chain
@@ -36,3 +37,5 @@ def generate_hmm_sequence(
     next_emission_matrix = transition_matrix @ emission_matrix
 
     return observed_sequence, next_emission_matrix
+
+# %%

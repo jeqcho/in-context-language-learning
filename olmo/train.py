@@ -228,8 +228,8 @@ class Trainer:
 
     @property
     def batches_per_epoch(self) -> int:
-        if self.cfg.custom_train_dataset:
-            return self.cfg.custom_data_config.epoch_size // self.cfg.global_train_batch_size
+        if self.cfg.data.custom_train_dataset:
+            return self.cfg.data.custom_data_config.epoch_size // self.cfg.global_train_batch_size
         else:
             return self.dataset.total_size // self.cfg.global_train_batch_size
 
@@ -1248,7 +1248,7 @@ class Trainer:
                     log.info("Training epoch complete")
                     self.epoch = epoch + 1
                     self.global_train_examples_seen_this_epoch = 0
-                    if not self.cfg.custom_train_dataset:
+                    if not self.cfg.data.custom_train_dataset:
                         self.dataset.start_index = 0
                         if self.epoch < self.max_epochs:
                             self.dataset.reshuffle()

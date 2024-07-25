@@ -35,9 +35,9 @@ class KLBigramMetric(Metric):
         inputs = batch["input_ids"]
 
         # train a bigram model
-        bigram_model_batched = BatchedBigramModel(dim=self.dim)
+        batched_bigram_model = BatchedBigramModel(dim=self.dim)
         # get the Q and P distribution for KL-divergence
-        ps = bigram_model_batched.load(inputs)
+        ps = batched_bigram_model.load(inputs)
         # get all instances in the batch, last token, only consider first self.dim (vocab_size) logits
         current_logits = logits[:, -1, : self.dim]
         qs = F.log_softmax(current_logits, dim=1)

@@ -57,12 +57,12 @@ class BatchedUnigramModel:
         self.prob_table = torch.full((batch.shape[0], self.dim), fill_value=1, dtype=torch.float64).to(
             batch.device
         )
-        # for i in range(self.dim):
-            # self.prob_table[:, i] += torch.sum(batch == i, axis=1)
+        for i in range(self.dim):
+            self.prob_table[:, i] += torch.sum(batch == i, axis=1)
 
         # equivalent function, maybe faster, test it out
-        for token in batch.T:
-            self.prob_table[np.arange(batch.shape[0]), token] += 1
+        # for token in batch.T:
+        #     self.prob_table[np.arange(batch.shape[0]), token] += 1
 
         self.prob_table /= torch.sum(self.prob_table, axis=1).reshape(batch.shape[0], -1)
 
