@@ -23,34 +23,19 @@ class KLUnigramMetric(Metric):
         self.kl_divs = []
 
     def update(self, batch: Dict[str, Any], logits: torch.Tensor):
-        batch = ngram_preprocess_batch(batch)
+        # batch = ngram_preprocess_batch(batch)
 
         # train a bigram model
         inputs = batch["input_ids"]
 
         # get the Q and P distribution for KL-divergence
-        # ps = []
-        # batched_unigram_model = BatchedUnigramModel(dim=self.dim)
-        # ps = batched_unigram_model.load(inputs)
-        # # get all instances in the batch, last token, only consider first self.dim (vocab_size) logits
-        # current_logits = logits[:, -1, : self.dim]
-        # qs = F.log_softmax(current_logits, dim=1)
-        # self.kl_divs.append(F.kl_div(qs, ps, reduction="batchmean"))
-
-        unigram_model = UnigramModel(dim=self.dim)
-
-        # get the Q and P distribution for KL-divergence
-        for i in range(len(inputs)):
-            unigram_model.load(inputs[i])
-            # get probabilities of the next-token prediction by bigram
-            unigram_probs = unigram_model.get_probability_table()
-            # focus on the first few relevant ones (non special tokens)
-            current_logits = logits[i][-1][:self.dim]
-            q = F.log_softmax(current_logits, dim=0)
-            p = torch.tensor(unigram_probs).to(q.device)
-
-            self.kl_divs.append(F.kl_div(q, p, reduction="sum"))
-            unigram_model.reset()
+        ps = []
+        batched_unigram_model = BatchedUnigramModel(dim=self.dim)
+        ps = batched_unigram_model.load(inputs)
+        # get all instances in the batch, last token, only consider first self.dim (vocab_size) logits
+        current_logits = logits[:, -1, : self.dim]
+        qs = F.log_softmax(current_logits, dim=1)
+        self.kl_divs.append(F.kl_div(qs, ps, reduction="batchmean"))
 
 
     def compute(self) -> torch.Tensor:

@@ -1,4 +1,4 @@
-run_name: reset-markov
+run_name: markov-baseline-bigram-likely-fix
 dry_run: false
 distributed_strategy: fsdp
 
@@ -26,10 +26,10 @@ model:
   embedding_dropout: 0.0
   max_sequence_length: 150
   include_bias: true
-  vocab_size: 16
+  vocab_size: 8
   embedding_size: 128
-  pad_token_id: 14
-  eos_token_id: 15
+  pad_token_id: 6
+  eos_token_id: 7
   init_device: meta
   init_std: 0.02
 
@@ -60,14 +60,14 @@ data:
   timeout: 0
   custom_train_dataset: true
   custom_data_config:
-    custom_data_type: hmm
-    hmm_dataset_config:
-      num_hidden_states: 5
+    custom_data_type: markov
+    markov_dataset_config:
+      num_states: 3
       seq_len: 150
-      num_symbols: 12
+      vocab_size: 3
 
 tokenizer:
-  identifier: ../olmo_data/tokenizers/16-token-tokenizer.json
+  identifier: ../olmo_data/tokenizers/8-token-tokenizer.json
   truncate_direction: right
 
 save_folder: /n/holyscratch01/sham_lab/summer_2024/checkpoints/${run_name}-${oc.env:SLURM_JOB_ID}
@@ -97,41 +97,57 @@ eval_interval: 250
 eval_subset_num_batches: -1
 device_eval_batch_size: ${device_train_microbatch_size}
 evaluators:
+  - label: mc-bigram-validation
+    type: bg
+    subset_num_batches: 2
+    data:
+      num_workers: 1
+      drop_last: true
+      pin_memory: true
+      persistent_workers: true
+      prefetch_factor: 4
+      custom_train_dataset: true
+      custom_data_config:
+        custom_data_type: markov
+        markov_dataset_config:
+          num_states: 3
+          seq_len: 150
+          vocab_size: 3
+  - label: mc-unigram-validation
+    type: ug
+    subset_num_batches: 2
+    data:
+      num_workers: 1
+      drop_last: true
+      pin_memory: true
+      persistent_workers: true
+      prefetch_factor: 4
+      custom_train_dataset: true
+      custom_data_config:
+        custom_data_type: markov
+        markov_dataset_config:
+          num_states: 3
+          seq_len: 150
+          vocab_size: 3
+  - label: mc-uniform-validation
+    type: uf
+    subset_num_batches: 2
+    data:
+      num_workers: 1
+      drop_last: true
+      pin_memory: true
+      persistent_workers: true
+      prefetch_factor: 4
+      custom_train_dataset: true
+      custom_data_config:
+        custom_data_type: markov
+        markov_dataset_config:
+          num_states: 3
+          seq_len: 150
+          vocab_size: 3
   #########################
   # Perplexity evaluations #
   #########################
-  - label: hmm-ground-truth
-    type: hmm
-    subset_num_batches: 2
-    data:
-      num_workers: 1
-      drop_last: true
-      pin_memory: true
-      persistent_workers: true
-      prefetch_factor: 4
-      custom_train_dataset: true
-      custom_data_config:
-        custom_data_type: hmm
-        hmm_dataset_config:
-          num_hidden_states: 5
-          seq_len: 150
-          num_symbols: 12
-  - label: hmm-ground-truth-random
-    type: hmm_random
-    subset_num_batches: 2
-    data:
-      num_workers: 1
-      drop_last: true
-      pin_memory: true
-      persistent_workers: true
-      prefetch_factor: 4
-      custom_train_dataset: true
-      custom_data_config:
-        custom_data_type: hmm
-        hmm_dataset_config:
-          num_hidden_states: 5
-          seq_len: 150
-          num_symbols: 12
   # - label: mc-validation-100k
   #   subset_num_batches: 10
   #   data:

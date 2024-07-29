@@ -1,10 +1,10 @@
 #!/bin/bash
-#SBATCH --job-name=11-hmm-eval
+#SBATCH --job-name=12-markov-baseline
 #SBATCH --account=kempner_sham_lab
-#SBATCH --partition=kempner
+#SBATCH --partition=kempner_h100
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=16
+#SBATCH --cpus-per-task=24
 #SBATCH --gres=gpu:1
 #SBATCH --time=0-00:30
 #SBATCH --mem=128G
@@ -23,4 +23,4 @@ mamba activate olmo2
 # EMITS=(3 5 7 10 15)
 # EMIT=${EMITS[$SLURM_ARRAY_TASK_ID]}
 
-torchrun --master_port=25632 --nproc_per_node=1 ../scripts/train.py model.yaml --save_overwrite=true
+torchrun --master_port=25612 --nproc_per_node=1 ../scripts/train.py model.yaml --save_overwrite=true

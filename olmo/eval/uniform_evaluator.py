@@ -22,7 +22,7 @@ class KLUniformMetric(Metric):
         self.kl_divs = []
 
     def update(self, batch: Dict[str, Any], logits: torch.Tensor):
-        batch = ngram_preprocess_batch(batch)
+        # batch = ngram_preprocess_batch(batch)
 
         # get the Q and P distribution for KL-divergence
         ps = torch.full(size=(logits.shape[0], self.dim), fill_value=1/self.dim).to(logits.device)
