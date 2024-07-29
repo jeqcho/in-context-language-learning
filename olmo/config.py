@@ -683,6 +683,7 @@ class EvaluatorType(StrEnum):
     bg = "bg"  # bigram
     ug = "ug"  # unigram
     uf = "uf"  # uniform
+    hmm = "hmm"  # hmm ground truth
 
 
 @dataclass

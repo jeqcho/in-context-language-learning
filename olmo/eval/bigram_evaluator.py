@@ -34,14 +34,32 @@ class KLBigramMetric(Metric):
 
         inputs = batch["input_ids"]
 
+        # # train a bigram model
+        # batched_bigram_model = BatchedBigramModel(dim=self.dim)
+        # # get the Q and P distribution for KL-divergence
+        # ps = batched_bigram_model.load(inputs)
+        # # get all instances in the batch, last token, only consider first self.dim (vocab_size) logits
+        # current_logits = logits[:, -1, : self.dim]
+        # qs = F.log_softmax(current_logits, dim=1)
+        # self.kl_divs.append(F.kl_div(qs, ps, reduction="batchmean"))
+
+        
         # train a bigram model
-        batched_bigram_model = BatchedBigramModel(dim=self.dim)
+
+        bigram_model = BigramModel(dim=self.dim)
+
         # get the Q and P distribution for KL-divergence
-        ps = batched_bigram_model.load(inputs)
-        # get all instances in the batch, last token, only consider first self.dim (vocab_size) logits
-        current_logits = logits[:, -1, : self.dim]
-        qs = F.log_softmax(current_logits, dim=1)
-        self.kl_divs.append(F.kl_div(qs, ps, reduction="batchmean"))
+        for i in range(len(inputs)):
+            for j in range(1, len(inputs[i])):
+                bigram_model.update(inputs[i][j - 1], inputs[i][j])
+            # get probabilities of the next-token prediction by bigram
+            bigram_probs = bigram_model.get_transition_matrix()[inputs[i][-1]]
+            current_logits = logits[i][-1][: self.dim]
+            q = F.log_softmax(current_logits, dim=0)
+            p = torch.tensor(bigram_probs).to(q.device)
+            # reset the model for next Markov chain instance
+            self.kl_divs.append(F.kl_div(q, p, reduction="sum"))
+            bigram_model.reset()
 
     def compute(self) -> torch.Tensor:
         kl_div = torch.mean(torch.tensor(self.kl_divs))

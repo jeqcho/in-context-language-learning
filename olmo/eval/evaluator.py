@@ -10,6 +10,7 @@ from .downstream import ICLMetric
 from .bigram_evaluator import KLBigramMetric
 from .unigram_evaluator import KLUnigramMetric
 from .uniform_evaluator import KLUniformMetric
+from .hmm_evaluator import KLHMMMetric
 
 __all__ = ["Evaluator"]
 
@@ -66,12 +67,14 @@ class Evaluator:
             return out
         elif self.type == EvaluatorType.bg:
             # bigram
+            # raise Exception("Possible bug in bigram implementation")
             assert isinstance(self.eval_metric, KLBigramMetric)
             value = self.eval_metric.compute().item()
             key = f"eval/{self.label}_{self.eval_metric.metric_type}"
             return {key: value}
         elif self.type == EvaluatorType.ug:
             # unigram
+            # raise Exception("Possible bug in unigram implementation")
             assert isinstance(self.eval_metric, KLUnigramMetric)
             value = self.eval_metric.compute().item()
             key = f"eval/{self.label}_{self.eval_metric.metric_type}"
@@ -81,6 +84,11 @@ class Evaluator:
             value = self.eval_metric.compute().item()
             key = f"eval/{self.label}_{self.eval_metric.metric_type}"
             return {key: value}
+        elif self.type == EvaluatorType.hmm:
+            assert isinstance(self.eval_metric, KLHMMMetric)
+            value = self.eval_metric.compute().item()
+            key = f"eval/{self.label}_{self.eval_metric.metric_type}"
+            return {key: value} # tbh the code is the same for all these metrics
         else:
             raise ValueError(f"Unexpected evaluator type '{self.type}'")
 
@@ -112,6 +120,10 @@ class Evaluator:
         elif self.type == EvaluatorType.uf:
             # uniform
             assert isinstance(self.eval_metric, KLUniformMetric)
+            self.eval_metric.update(batch, logits)
+        elif self.type == EvaluatorType.hmm:
+            # hmm ground truth
+            assert isinstance(self.eval_metric, KLHMMMetric)
             self.eval_metric.update(batch, logits)
         else:
             raise ValueError(f"Unexpected evaluator type '{self.type}'")

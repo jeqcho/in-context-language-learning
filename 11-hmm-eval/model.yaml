@@ -1,4 +1,4 @@
-run_name: unbatched-unigram-bigram-baseline-markov
+run_name: hmm-eval
 dry_run: false
 distributed_strategy: fsdp
 
@@ -60,11 +60,11 @@ data:
   timeout: 0
   custom_train_dataset: true
   custom_data_config:
-    custom_data_type: markov
-    markov_dataset_config:
-      num_states: 3
+    custom_data_type: hmm
+    hmm_dataset_config:
+      num_hidden_states: 5
       seq_len: 150
-      vocab_size: 3
+      num_symbols: 5
 
 tokenizer:
   identifier: ../olmo_data/tokenizers/8-token-tokenizer.json
@@ -100,6 +100,22 @@ evaluators:
   #########################
   # Perplexity evaluations #
   #########################
+  - label: hmm-ground-truth
+    type: hmm
+    subset_num_batches: 2
+    data:
+      num_workers: 1
+      drop_last: true
+      pin_memory: true
+      persistent_workers: true
+      prefetch_factor: 4
+      custom_train_dataset: true
+      custom_data_config:
+        custom_data_type: hmm
+        hmm_dataset_config:
+          num_hidden_states: 5
+          seq_len: 150
+          num_symbols: 5
   - label: mc-bigram-validation
     type: bg
     subset_num_batches: 2
