@@ -19,4 +19,4 @@ module load python
 # Activate conda environment (optional)
 mamba activate olmo2
 
-torchrun --master_port=25692 --nproc_per_node=1 ../scripts/train.py model.yaml --save_overwrite=true
+torchrun --master_port=25632 --nproc_per_node=1 ../scripts/train.py model.yaml --save_overwrite=true

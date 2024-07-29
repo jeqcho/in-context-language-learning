@@ -15,7 +15,7 @@ class HMMDataset(Dataset):
         return self.epoch_size
 
     def __getitem__(self, idx):
-        observed_chain, next_emission_matrix = generate_hmm_sequence(
+        observed_chain, next_emission_matrix, hidden_sequence = generate_hmm_sequence(
             num_symbols=self.num_symbols, num_hidden_states=self.num_hidden_states, seq_len=self.seq_len
         )
         return {
@@ -23,5 +23,6 @@ class HMMDataset(Dataset):
             "metadata": {
                 "chosen_symbols": np.arange(self.num_symbols),
                 "next_emission_matrix": next_emission_matrix,
+                "hidden_sequence": hidden_sequence
             },
         }

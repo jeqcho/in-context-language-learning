@@ -684,6 +684,7 @@ class EvaluatorType(StrEnum):
     ug = "ug"  # unigram
     uf = "uf"  # uniform
     hmm = "hmm"  # hmm ground truth
+    hmm_random = "hmm_random"  # hmm ground truth
 
 
 @dataclass

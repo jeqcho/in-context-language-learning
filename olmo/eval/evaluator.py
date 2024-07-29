@@ -5,6 +5,8 @@ import torch
 from torch.utils.data import DataLoader
 from torchmetrics import MeanMetric, Metric
 
+from olmo.eval.hmm_random_evaluator import KLHMMRandomMetric
+
 from ..config import EvaluatorType
 from .downstream import ICLMetric
 from .bigram_evaluator import KLBigramMetric
@@ -89,6 +91,11 @@ class Evaluator:
             value = self.eval_metric.compute().item()
             key = f"eval/{self.label}_{self.eval_metric.metric_type}"
             return {key: value} # tbh the code is the same for all these metrics
+        elif self.type == EvaluatorType.hmm_random:
+            assert isinstance(self.eval_metric, KLHMMRandomMetric)
+            value = self.eval_metric.compute().item()
+            key = f"eval/{self.label}_{self.eval_metric.metric_type}"
+            return {key: value} # tbh the code is the same for all these metrics
         else:
             raise ValueError(f"Unexpected evaluator type '{self.type}'")
 
@@ -124,6 +131,10 @@ class Evaluator:
         elif self.type == EvaluatorType.hmm:
             # hmm ground truth
             assert isinstance(self.eval_metric, KLHMMMetric)
+            self.eval_metric.update(batch, logits)
+        elif self.type == EvaluatorType.hmm_random:
+            # hmm ground truth
+            assert isinstance(self.eval_metric, KLHMMRandomMetric)
             self.eval_metric.update(batch, logits)
         else:
             raise ValueError(f"Unexpected evaluator type '{self.type}'")

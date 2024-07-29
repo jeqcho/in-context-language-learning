@@ -5,6 +5,7 @@ from torch.utils.data import DataLoader, DistributedSampler
 from torchmetrics import MeanMetric, Metric
 
 from olmo.eval.hmm_evaluator import KLHMMMetric
+from olmo.eval.hmm_random_evaluator import KLHMMRandomMetric
 
 from ..config import EvaluatorConfig, EvaluatorType, TrainConfig, CustomDataType
 from ..exceptions import OLMoConfigurationError
@@ -206,6 +207,34 @@ def build_evaluator(
                 )
             else:
                 return KLHMMMetric(dim=eval_config.data.custom_data_config.hmm_dataset_config.num_symbols).to(
+                    device
+                )
+
+        eval_metric: Union[Metric, Dict[str, Metric]]
+        eval_metric = make_metric()
+
+        # return an evaluator that computes the KL divergence with the bigram model
+        return Evaluator(
+            label=eval_config.label,
+            type=eval_config.type,
+            eval_loader=eval_loader,
+            eval_metric=eval_metric,
+            subset_num_batches=eval_config.subset_num_batches,
+        )
+    elif eval_config.type == EvaluatorType.hmm_random:
+        # KL divergence with unigram model
+        # load the on-the-fly Markov chain generator
+        assert train_config.data.custom_train_dataset
+        eval_loader = build_custom_dataloader(train_config, eval_config.data)
+
+        # use KL divergence
+        def make_metric():
+            if eval_config.data.custom_data_config.custom_data_type == CustomDataType.markov:
+                return KLHMMRandomMetric(dim=eval_config.data.custom_data_config.markov_dataset_config.num_states).to(
+                    device
+                )
+            else:
+                return KLHMMRandomMetric(dim=eval_config.data.custom_data_config.hmm_dataset_config.num_symbols).to(
                     device
                 )
 

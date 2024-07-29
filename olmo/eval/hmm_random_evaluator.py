@@ -9,9 +9,9 @@ import numpy as np
 log = logging.getLogger(__name__)
 
 
-class KLHMMMetric(Metric):
+class KLHMMRandomMetric(Metric):
     full_state_update: bool = False
-    metric_type = "kl-hmm-metric-type"
+    metric_type = "kl-hmm-random-metric-type"
 
     def __init__(self, dim=10) -> None:
         super().__init__(sync_on_compute=True)
@@ -41,7 +41,9 @@ class KLHMMMetric(Metric):
 
         ps = next_emission_matrices[torch.arange(batch["input_ids"].shape[0]), last_tokens]
         ps = torch.tensor(ps).to(logits.device)
-        current_logits = logits[:, -1, : self.dim]
+        # current_logits = logits[:, -1, : self.dim]
+        # use uniform logits as random
+        current_logits = torch.full(size=(logits.shape[0],self.dim), fill_value=1/self.dim).to(logits.device)
         qs = F.log_softmax(current_logits, dim=1)
         self.kl_divs.append(F.kl_div(qs, ps, reduction="batchmean"))
 
