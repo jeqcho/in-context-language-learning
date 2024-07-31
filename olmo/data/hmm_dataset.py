@@ -10,19 +10,24 @@ class HMMDataset(Dataset):
         self.seq_len = hmm_dataset_config.seq_len
         self.num_hidden_states = hmm_dataset_config.num_hidden_states
         self.epoch_size = epoch_size
+        self.zipfian = hmm_dataset_config.zipfian
+        self.zipfian_scale = hmm_dataset_config.zipfian_scale
 
     def __len__(self):
         return self.epoch_size
 
     def __getitem__(self, idx):
-        observed_chain, next_emission_matrix, hidden_sequence = generate_hmm_sequence(
-            num_symbols=self.num_symbols, num_hidden_states=self.num_hidden_states, seq_len=self.seq_len
+        observed_chain, emission_probs, hidden_sequence = generate_hmm_sequence(
+            num_symbols=self.num_symbols,
+            num_hidden_states=self.num_hidden_states,
+            seq_len=self.seq_len,
+            zipfian_flag=self.zipfian,
+            zipfian_scale=self.zipfian_scale,
         )
         return {
             "input_ids": observed_chain,
             "metadata": {
                 "chosen_symbols": np.arange(self.num_symbols),
-                "next_emission_matrix": next_emission_matrix,
-                "hidden_sequence": hidden_sequence
+                "emission_probs": emission_probs,
             },
         }

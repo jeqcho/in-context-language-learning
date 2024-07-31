@@ -608,6 +608,16 @@ class HMMDatasetConfig(BaseConfig):
     Number of hidden states 
     """
 
+    zipfian: bool = False
+    """
+    Initialize the starting emission probabilities by using Zipfian (instead of all ones) inside the Dirichlet
+    """
+
+    zipfian_scale: int = 1
+    """
+    Increase the variance of the Dirichlet roughly by this scale
+    """
+
 
 @dataclass
 class CustomDataConfig(BaseConfig):
@@ -656,6 +666,11 @@ class DataConfig(BaseConfig):
     For online training data generation
     """
 
+    use_train_custom_data_config: bool = False
+    """
+    For evaluators, if true then use the custom_data_config in the train config
+    """
+
     custom_data_config: CustomDataConfig = field(default_factory=CustomDataConfig)
     """
     Custom data config e.g. Markov chains
@@ -684,7 +699,8 @@ class EvaluatorType(StrEnum):
     ug = "ug"  # unigram
     uf = "uf"  # uniform
     hmm = "hmm"  # hmm ground truth
-    hmm_random = "hmm_random"  # hmm ground truth
+    hmm_random = "hmm_random"  # hmm uniform to ground truth
+    hmm_bigram = "hmm_bigram"  # hmm bigram to ground truth
 
 
 @dataclass

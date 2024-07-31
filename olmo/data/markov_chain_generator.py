@@ -1,6 +1,27 @@
 import torch as t
 import numpy as np
 from random import choices
+import numpy.typing as npt
+
+def make_doubly_stochastic(matrix: npt.NDArray) -> None:
+    row_sums = matrix.sum(axis=1, keepdims=True)
+    col_sums = matrix.sum(axis=0, keepdims=True)
+
+    # Use the Sinkhorn-Knopp algorithm to make it doubly stochastic
+    while not np.allclose(row_sums, 1, atol=1e-4) or not np.allclose(col_sums, 1, atol=1e-4):
+
+        row_sums = matrix.sum(axis=1, keepdims=True)
+        col_sums = matrix.sum(axis=0, keepdims=True)
+
+        # Normalize rows
+        matrix /= row_sums
+        # Normalize columns
+        matrix /= col_sums
+
+    # normalize rows one last time
+    row_sum = matrix.sum(axis=1, keepdims=True)
+    matrix /= row_sum
+    # this is done in place
 
 
 def stationary_distribution(prob):
@@ -53,23 +74,8 @@ def generate_markov_chain(num_symbols, seq_len, deterministic=False, doubly_stoc
     if doubly_stochastic:
         # already so if deterministc
         if not deterministic:
-            row_sums = transition_matrix.sum(axis=1, keepdims=True)
-            col_sums = transition_matrix.sum(axis=0, keepdims=True)
-
-            # Use the Sinkhorn-Knopp algorithm to make it doubly stochastic
-            while not np.allclose(row_sums, 1, atol=1e-4) or not np.allclose(col_sums, 1, atol=1e-4):
-
-                row_sums = transition_matrix.sum(axis=1, keepdims=True)
-                col_sums = transition_matrix.sum(axis=0, keepdims=True)
-
-                # Normalize rows
-                transition_matrix /= row_sums
-                # Normalize columns
-                transition_matrix /= col_sums
-
-            # normalize rows one last time
-            row_sum = transition_matrix.sum(axis=1, keepdims=True)
-            transition_matrix /= row_sum
+            make_doubly_stochastic(transition_matrix) # in-place
+            
 
     stat_dist = t.tensor(stationary_distribution(transition_matrix))
     thresholds = transition_matrix.cumsum(axis=1).tolist()

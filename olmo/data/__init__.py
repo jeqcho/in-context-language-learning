@@ -150,14 +150,6 @@ def build_custom_dataloader(train_config: TrainConfig, data_config: DataConfig) 
         raise NotImplementedError(
             f"Unrecognized custom data type {data_config.custom_data_config.custom_data_type}"
         )
-    work_dir = Path(train_config.save_folder) / "train_data"
-    if get_global_rank() == 0:
-        if work_dir.is_dir() and not train_config.save_overwrite:
-            raise OLMoConfigurationError(
-                "train data working directory already exists, use --save_overwrite to overwrite"
-            )
-        else:
-            work_dir.mkdir(exist_ok=True, parents=True)
     barrier()
     return DataLoader(
         dataset,

@@ -1,13 +1,14 @@
 #%%
 import torch
 import numpy as np
-from .markov_chain_generator import generate_markov_chain
+from .markov_chain_generator import generate_markov_chain, make_doubly_stochastic
 from random import choices
 from typing import Tuple
+from scipy.stats import zipfian
 
 
 def generate_hmm_sequence(
-    num_symbols: int, num_hidden_states: int, seq_len: int
+    num_symbols: int, num_hidden_states: int, seq_len: int, zipfian_flag: bool, zipfian_scale: int
 ) -> Tuple[torch.Tensor, np.ndarray, torch.Tensor]:
     """
     Generates a sequence of observations from a Hidden Markov Model (HMM) with a given number of symbols, hidden states, and sequence length.
@@ -20,11 +21,18 @@ def generate_hmm_sequence(
     """
     # generate a Markov chain as the hidden states
     hidden_sequence, transition_matrix, chosen_symbols = generate_markov_chain(
-        num_symbols=num_hidden_states, seq_len=seq_len, deterministic=False, doubly_stochastic=False
+        num_symbols=num_hidden_states, seq_len=seq_len, deterministic=False, doubly_stochastic=True
     )
 
     # generate the emission matrix
-    emission_matrix = np.random.dirichlet(np.ones(num_symbols), size=(num_hidden_states,))
+    if zipfian_flag:
+        ranks = np.arange(1, num_symbols + 1)
+        # Calculate the PMF using scipy
+        pmf = zipfian.pmf(ranks, 1, num_symbols)
+        pmf /= zipfian_scale
+        emission_matrix = np.random.dirichlet(pmf, size=(num_hidden_states,))
+    else:
+        emission_matrix = np.random.dirichlet(np.ones(num_symbols), size=(num_hidden_states,))
 
     # replace the hidden states with the emissions
     observed_sequence = torch.tensor(
@@ -34,8 +42,12 @@ def generate_hmm_sequence(
     # for evaluation we effectively need the distirbution of emissions of the next state
     # this is conveniently transition_matrix @ emission_matrix
 
-    next_emission_matrix = transition_matrix @ emission_matrix
+    # next_emission_matrix = transition_matrix @ emission_matrix
 
-    return observed_sequence, next_emission_matrix, hidden_sequence
+    # to be memory efficient, we just take the last token
+    last_token = hidden_sequence[-1]
+    emission_probs = transition_matrix[last_token] @ emission_matrix
+
+    return observed_sequence, emission_probs, hidden_sequence
 
 # %%

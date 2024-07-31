@@ -1,0 +1,189 @@
+run_name: 41M-nw-2
+dry_run: false
+distributed_strategy: fsdp
+
+wandb:
+  name: ${run_name}
+  project: hmm
+  entity: jchooi
+
+model:
+  d_model: 512
+  n_heads: 4
+  n_layers: 4
+  mlp_ratio: 8
+  alibi: false
+  rope: true
+  alibi_bias_max: 8.0
+  flash_attention: false
+  attention_dropout: 0.0
+  attention_layer_norm: true
+  multi_query_attention: true
+  block_type: sequential
+  layer_norm_type: low_precision  # if not compiling, use 'low_precision'
+  activation_type: swiglu
+  residual_dropout: 0.0
+  embedding_dropout: 0.0
+  max_sequence_length: 512
+  include_bias: true
+  vocab_size: 50257
+  embedding_size: 50304
+  pad_token_id: -1
+  eos_token_id: 50256
+  init_device: meta
+  init_std: 0.02
+
+compile: null  # causes instability on AMD GPUs
+# compile:
+#   mode: default
+
+optimizer:
+  name: adamw
+  learning_rate: 1.0e-3
+  weight_decay: 0
+  betas:
+  - 0.9
+  - 0.95
+
+scheduler:
+  name: cosine_with_warmup
+  t_warmup: 5000
+  alpha_f: 0.1
+
+data:
+  pad_direction: right
+  num_workers: 2
+  drop_last: true
+  pin_memory: true
+  prefetch_factor: 2
+  persistent_workers: true
+  timeout: 0
+  custom_train_dataset: true
+  custom_data_config:
+    custom_data_type: hmm
+    hmm_dataset_config:
+      num_hidden_states: 1000
+      seq_len: 512
+      num_symbols: 50257
+      zipfian: true
+
+tokenizer:
+  identifier: ../olmo_data/tokenizers/eleuther-gpt-neo-125m.json
+  truncate_direction: right
+
+save_folder: /n/holyscratch01/sham_lab/summer_2024/checkpoints/${run_name}-${oc.env:SLURM_JOB_ID}
+save_overwrite: true
+# Sharded checkpoints (best for restarts)
+save_interval: 1000
+save_num_checkpoints_to_keep: 9
+# Unsharded checkpoints (for final storage)
+save_interval_unsharded: 1000
+save_num_unsharded_checkpoints_to_keep: -1
+
+load_path: null
+
+# max_duration: 476837  # 2T tokens
+max_duration: 10ep  # 20B tokens
+global_train_batch_size: 1024
+device_train_microbatch_size: 1
+
+precision: amp_bf16
+  
+max_grad_norm: 1.0
+
+speed_monitor:
+  window_size: 20
+
+eval_interval: 250
+eval_subset_num_batches: -1
+device_eval_batch_size: ${device_train_microbatch_size}
+evaluators:
+  - label: hmm-ground-truth-bigram
+    type: hmm_bigram
+    subset_num_batches: 2
+    data:
+      num_workers: 1
+      drop_last: true
+      pin_memory: true
+      persistent_workers: true
+      prefetch_factor: 2
+      custom_train_dataset: true
+      use_train_custom_data_config: true
+  - label: hmm-ground-truth
+    type: hmm
+    subset_num_batches: 2
+    data:
+      num_workers: 1
+      drop_last: true
+      pin_memory: true
+      persistent_workers: true
+      prefetch_factor: 2
+      custom_train_dataset: true
+      use_train_custom_data_config: true
+  - label: hmm-ground-truth-random
+    type: hmm_random
+    subset_num_batches: 2
+    data:
+      num_workers: 1
+      drop_last: true
+      pin_memory: true
+      persistent_workers: true
+      prefetch_factor: 2
+      custom_train_dataset: true
+      use_train_custom_data_config: true
+  - label: mc-bigram-validation
+    type: bg
+    subset_num_batches: 2
+    data:
+      num_workers: 1
+      drop_last: true
+      pin_memory: true
+      persistent_workers: true
+      prefetch_factor: 2
+      custom_train_dataset: true
+      use_train_custom_data_config: true
+  - label: mc-unigram-validation
+    type: ug
+    subset_num_batches: 2
+    data:
+      num_workers: 1
+      drop_last: true
+      pin_memory: true
+      persistent_workers: true
+      prefetch_factor: 2
+      custom_train_dataset: true
+      use_train_custom_data_config: true
+  - label: mc-uniform-validation
+    type: uf
+    subset_num_batches: 2
+    data:
+      num_workers: 1
+      drop_last: true
+      pin_memory: true
+      persistent_workers: true
+      prefetch_factor: 2
+      custom_train_dataset: true
+      use_train_custom_data_config: true
+  - label: tinystories
+    subset_num_batches: 10
+    data:
+      paths:
+        - /n/holyscratch01/sham_lab/summer_2024/datasets/tinystories/input_ids.npy
+      num_workers: 1
+      drop_last: true
+      pin_memory: true
+      persistent_workers: true
+      prefetch_factor: 4
+      custom_train_dataset: false
+  #########################
+  # Perplexity evaluations #
+  #########################
+  # - label: mc-validation-100k
+  #   subset_num_batches: 10
+  #   data:
+  #     paths: ${path.glob:/n/holyscratch01/sham_lab/summer_2024/markov_dataset_val_100K.npy}
+  #     num_workers: 1
+  #     drop_last: true
+  #     pin_memory: true
+  #     persistent_workers: true
+  #     prefetch_factor: 4

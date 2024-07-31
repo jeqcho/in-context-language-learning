@@ -28,19 +28,10 @@ class KLHMMRandomMetric(Metric):
         # batch = ngram_preprocess_batch(batch)
 
         # get the Q and P distribution for KL-divergence
-        hidden_sequences = torch.stack([d["hidden_sequence"] for d in batch["metadata"]], axis=0)
-        last_tokens = hidden_sequences[:, -1]
-        next_emission_matrices = torch.tensor(
-            np.stack([d["next_emission_matrix"] for d in batch["metadata"]], axis=0)
+        ps = torch.tensor(
+            np.stack([d["emission_probs"] for d in batch["metadata"]], axis=0)
         )
-        log.info(f"next_emission_matrices device {next_emission_matrices.device}")
-
-        next_emission_matrices = next_emission_matrices.to(batch["input_ids"].device)
-
-        log.info(f"next_emission_matrices device {next_emission_matrices.device}")
-
-        ps = next_emission_matrices[torch.arange(batch["input_ids"].shape[0]), last_tokens]
-        ps = torch.tensor(ps).to(logits.device)
+        ps = ps.to(logits.device)
         # current_logits = logits[:, -1, : self.dim]
         # use uniform logits as random
         current_logits = torch.full(size=(logits.shape[0],self.dim), fill_value=1/self.dim).to(logits.device)

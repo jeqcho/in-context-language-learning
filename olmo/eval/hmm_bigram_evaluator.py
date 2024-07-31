@@ -3,15 +3,17 @@ import logging
 import torch
 import torch.nn.functional as F
 from torchmetrics import Metric
+
+from olmo.eval.bigram_model import BatchedBigramModel
 from .ngram_preprocess_batch import ngram_preprocess_batch
 import numpy as np
 
 log = logging.getLogger(__name__)
 
 
-class KLHMMMetric(Metric):
+class KLHMMBigramMetric(Metric):
     full_state_update: bool = False
-    metric_type = "kl-hmm-metric-type"
+    metric_type = "kl-hmm-bigram-metric-type"
 
     def __init__(self, dim=10) -> None:
         super().__init__(sync_on_compute=True)
@@ -32,8 +34,10 @@ class KLHMMMetric(Metric):
             np.stack([d["emission_probs"] for d in batch["metadata"]], axis=0)
         )
         ps = ps.to(logits.device)
-        current_logits = logits[:, -1, : self.dim]
-        qs = F.log_softmax(current_logits, dim=1)
+        # train a bigram model
+        batched_bigram_model = BatchedBigramModel(dim=self.dim)
+        qs_exp = batched_bigram_model.load(batch["input_ids"])
+        qs = F.log_softmax(qs_exp, dim=1)
         self.kl_divs.append(F.kl_div(qs, ps, reduction="batchmean"))
 
     def compute(self) -> torch.Tensor:
