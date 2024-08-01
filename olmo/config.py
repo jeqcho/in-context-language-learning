@@ -701,6 +701,7 @@ class EvaluatorType(StrEnum):
     hmm = "hmm"  # hmm ground truth
     hmm_random = "hmm_random"  # hmm uniform to ground truth
     hmm_bigram = "hmm_bigram"  # hmm bigram to ground truth
+    hmm_unigram = "hmm_unigram"  # hmm unigram to ground truth
 
 
 @dataclass

@@ -7,6 +7,7 @@ from torchmetrics import MeanMetric, Metric
 
 from olmo.eval.hmm_bigram_evaluator import KLHMMBigramMetric
 from olmo.eval.hmm_random_evaluator import KLHMMRandomMetric
+from olmo.eval.hmm_unigram_evaluator import KLHMMUnigramMetric
 
 from ..config import EvaluatorType
 from .downstream import ICLMetric
@@ -102,6 +103,11 @@ class Evaluator:
             value = self.eval_metric.compute().item()
             key = f"eval/{self.label}_{self.eval_metric.metric_type}"
             return {key: value} # tbh the code is the same for all these metrics
+        elif self.type == EvaluatorType.hmm_unigram:
+            assert isinstance(self.eval_metric, KLHMMUnigramMetric)
+            value = self.eval_metric.compute().item()
+            key = f"eval/{self.label}_{self.eval_metric.metric_type}"
+            return {key: value} # tbh the code is the same for all these metrics
         else:
             raise ValueError(f"Unexpected evaluator type '{self.type}'")
 
@@ -145,6 +151,10 @@ class Evaluator:
         elif self.type == EvaluatorType.hmm_bigram:
             # hmm ground truth
             assert isinstance(self.eval_metric, KLHMMBigramMetric)
+            self.eval_metric.update(batch, logits)
+        elif self.type == EvaluatorType.hmm_unigram:
+            # hmm ground truth
+            assert isinstance(self.eval_metric, KLHMMUnigramMetric)
             self.eval_metric.update(batch, logits)
         else:
             raise ValueError(f"Unexpected evaluator type '{self.type}'")
