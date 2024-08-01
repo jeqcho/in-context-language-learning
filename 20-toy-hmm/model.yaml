@@ -1,4 +1,4 @@
-run_name: can-unigram-evaluator-handle-numpy
+run_name: test-tinystories
 dry_run: false
 distributed_strategy: fsdp
 
@@ -64,7 +64,7 @@ data:
     hmm_dataset_config:
       num_hidden_states: 5
       seq_len: 150
-      num_symbols: 3
+      num_symbols: 10
       zipfian: false
 
 tokenizer:
@@ -85,7 +85,7 @@ load_path: null
 # max_duration: 476837  # 2T tokens
 max_duration: 10ep  # 20B tokens
 global_train_batch_size: 1024
-device_train_microbatch_size: 64
+device_train_microbatch_size: 1
 
 precision: amp_bf16
   
@@ -98,72 +98,83 @@ eval_interval: 1
 eval_subset_num_batches: -1
 device_eval_batch_size: ${device_train_microbatch_size}
 evaluators:
-  - label: hmm-ground-truth-bigram
-    type: hmm_bigram
-    subset_num_batches: 2
+  # - label: hmm-ground-truth-bigram
+  #   type: hmm_bigram
+  #   subset_num_batches: 2
+  #   data:
+  #     num_workers: 1
+  #     drop_last: true
+  #     pin_memory: true
+  #     persistent_workers: true
+  #     prefetch_factor: 2
+  #     custom_train_dataset: true
+  #     use_train_custom_data_config: true
+  # - label: hmm-ground-truth
+  #   type: hmm
+  #   subset_num_batches: 2
+  #   data:
+  #     num_workers: 1
+  #     drop_last: true
+  #     pin_memory: true
+  #     persistent_workers: true
+  #     prefetch_factor: 2
+  #     custom_train_dataset: true
+  #     use_train_custom_data_config: true
+  # - label: hmm-ground-truth-random
+  #   type: hmm_random
+  #   subset_num_batches: 2
+  #   data:
+  #     num_workers: 1
+  #     drop_last: true
+  #     pin_memory: true
+  #     persistent_workers: true
+  #     prefetch_factor: 2
+  #     custom_train_dataset: true
+  #     use_train_custom_data_config: true
+  # - label: mc-bigram-validation
+  #   type: bg
+  #   subset_num_batches: 2
+  #   data:
+  #     num_workers: 1
+  #     drop_last: true
+  #     pin_memory: true
+  #     persistent_workers: true
+  #     prefetch_factor: 2
+  #     custom_train_dataset: true
+  #     use_train_custom_data_config: true
+  # - label: mc-unigram-validation
+  #   type: ug
+  #   subset_num_batches: 2
+  #   data:
+  #     num_workers: 1
+  #     drop_last: true
+  #     pin_memory: true
+  #     persistent_workers: true
+  #     prefetch_factor: 2
+  #     custom_train_dataset: true
+  #     use_train_custom_data_config: true
+  # - label: mc-uniform-validation
+  #   type: uf
+  #   subset_num_batches: 2
+  #   data:
+  #     num_workers: 1
+  #     drop_last: true
+  #     pin_memory: true
+  #     persistent_workers: true
+  #     prefetch_factor: 2
+  #     custom_train_dataset: true
+  #     use_train_custom_data_config: true
+  - label: tinystories
+    subset_num_batches: 10
     data:
-      num_workers: 1
+      paths:
+        - /n/holyscratch01/sham_lab/summer_2024/datasets/tinystories-150/input_ids.npy
+      num_workers: 0
       drop_last: true
       pin_memory: true
       persistent_workers: true
       prefetch_factor: 2
-      custom_train_dataset: true
-      use_train_custom_data_config: true
-  - label: hmm-ground-truth
-    type: hmm
-    subset_num_batches: 2
-    data:
-      num_workers: 1
-      drop_last: true
-      pin_memory: true
-      persistent_workers: true
-      prefetch_factor: 2
-      custom_train_dataset: true
-      use_train_custom_data_config: true
-  - label: hmm-ground-truth-random
-    type: hmm_random
-    subset_num_batches: 2
-    data:
-      num_workers: 1
-      drop_last: true
-      pin_memory: true
-      persistent_workers: true
-      prefetch_factor: 2
-      custom_train_dataset: true
-      use_train_custom_data_config: true
-  - label: mc-bigram-validation
-    type: bg
-    subset_num_batches: 2
-    data:
-      num_workers: 1
-      drop_last: true
-      pin_memory: true
-      persistent_workers: true
-      prefetch_factor: 2
-      custom_train_dataset: true
-      use_train_custom_data_config: true
-  - label: mc-unigram-validation
-    type: ug
-    subset_num_batches: 2
-    data:
-      num_workers: 1
-      drop_last: true
-      pin_memory: true
-      persistent_workers: true
-      prefetch_factor: 2
-      custom_train_dataset: true
-      use_train_custom_data_config: true
-  - label: mc-uniform-validation
-    type: uf
-    subset_num_batches: 2
-    data:
-      num_workers: 1
-      drop_last: true
-      pin_memory: true
-      persistent_workers: true
-      prefetch_factor: 2
-      custom_train_dataset: true
-      use_train_custom_data_config: true
+      custom_train_dataset: false
   #########################
   # Perplexity evaluations #
   #########################

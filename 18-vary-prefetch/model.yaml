@@ -117,7 +117,7 @@ evaluators:
       drop_last: true
       pin_memory: true
       persistent_workers: true
-      prefetch_factor: 2
+      prefetch_factor: 1
       custom_train_dataset: true
       use_train_custom_data_config: true
   - label: hmm-ground-truth-random
@@ -128,7 +128,7 @@ evaluators:
       drop_last: true
       pin_memory: true
       persistent_workers: true
-      prefetch_factor: 2
+      prefetch_factor: 1
       custom_train_dataset: true
       use_train_custom_data_config: true
   - label: mc-bigram-validation
@@ -139,7 +139,7 @@ evaluators:
       drop_last: true
       pin_memory: true
       persistent_workers: true
-      prefetch_factor: 2
+      prefetch_factor: 1
       custom_train_dataset: true
       use_train_custom_data_config: true
   - label: mc-unigram-validation
@@ -150,7 +150,7 @@ evaluators:
       drop_last: true
       pin_memory: true
       persistent_workers: true
-      prefetch_factor: 2
+      prefetch_factor: 1
       custom_train_dataset: true
       use_train_custom_data_config: true
   - label: mc-uniform-validation
@@ -161,7 +161,7 @@ evaluators:
       drop_last: true
       pin_memory: true
       persistent_workers: true
-      prefetch_factor: 2
+      prefetch_factor: 1
       custom_train_dataset: true
       use_train_custom_data_config: true
   - label: tinystories
@@ -173,7 +173,7 @@ evaluators:
       drop_last: true
       pin_memory: true
       persistent_workers: true
-      prefetch_factor: 4
+      prefetch_factor: 2
       custom_train_dataset: false
   #########################
   # Perplexity evaluations #

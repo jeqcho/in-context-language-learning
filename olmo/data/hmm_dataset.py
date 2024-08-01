@@ -27,7 +27,6 @@ class HMMDataset(Dataset):
         return {
             "input_ids": observed_chain,
             "metadata": {
-                "chosen_symbols": np.arange(self.num_symbols),
                 "emission_probs": emission_probs,
             },
         }

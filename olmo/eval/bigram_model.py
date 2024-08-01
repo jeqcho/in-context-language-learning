@@ -43,18 +43,20 @@ class BatchedBigramModel:
     def __init__(self, dim):
         self.dim = dim
     
-    def load(self, batch):
-        mx = torch.max(batch)
+    def load(self, batch)->torch.Tensor:
+        mx = np.max(batch)
         assert mx < self.dim, f"max(batch) out of range. max(batch): {mx}, dim: {self.dim}"
 
         # initialize as frequency matrix
-        self.transition_matrix = torch.full((batch.shape[0], self.dim, self.dim), fill_value=1, dtype=torch.float64).to(batch.device)
+        self.transition_matrix = np.full((batch.shape[0], self.dim, self.dim), fill_value=1, dtype=np.float64)
         for pre, nex in zip(batch[:, :-1].T, batch[:, 1:].T):
             # pre (BATCH_SIZE, ) and nex (BATCH_SIZE, )
-            self.transition_matrix[torch.arange(batch.shape[0]), pre, nex] += 1
+            self.transition_matrix[np.arange(batch.shape[0]), pre, nex] += 1
         
-        self.transition_matrix /= torch.sum(self.transition_matrix,axis=2).reshape(batch.shape[0], -1, 1)
+        self.transition_matrix /= np.sum(self.transition_matrix,axis=2).reshape(batch.shape[0], -1, 1)
 
         # return the probabilities for the final token
-        return self.transition_matrix[torch.arange(batch.shape[0]), batch[:,-1]]
+        res = self.transition_matrix[np.arange(batch.shape[0]), batch[:,-1]]
+        res = torch.tensor(res)
+        return res
 

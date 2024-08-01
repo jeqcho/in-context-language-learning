@@ -35,8 +35,8 @@ def generate_hmm_sequence(
         emission_matrix = np.random.dirichlet(np.ones(num_symbols), size=(num_hidden_states,))
 
     # replace the hidden states with the emissions
-    observed_sequence = torch.tensor(
-        [np.random.choice(num_symbols, p=emission_matrix[state]) for state in hidden_sequence], dtype=torch.int32
+    observed_sequence = np.array(
+        [np.random.choice(num_symbols, p=emission_matrix[state]) for state in hidden_sequence], dtype=np.int32
     )
 
     # for evaluation we effectively need the distirbution of emissions of the next state
@@ -46,7 +46,9 @@ def generate_hmm_sequence(
 
     # to be memory efficient, we just take the last token
     last_token = hidden_sequence[-1]
-    emission_probs = transition_matrix[last_token] @ emission_matrix
+    relevant_row = transition_matrix[last_token]
+    del transition_matrix
+    emission_probs = relevant_row @ emission_matrix
 
     return observed_sequence, emission_probs, hidden_sequence
 

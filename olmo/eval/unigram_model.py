@@ -50,21 +50,18 @@ class BatchedUnigramModel:
         self.dim = dim
 
     def load(self, batch):
-        mx = torch.max(batch)
+        mx = np.max(batch)
         assert mx < self.dim, f"max(batch) out of range. max(batch): {mx}, dim: {self.dim}"
 
         # initialize as frequency matrix
-        self.prob_table = torch.full((batch.shape[0], self.dim), fill_value=1, dtype=torch.float64).to(
-            batch.device
-        )
+        self.prob_table = np.full((batch.shape[0], self.dim), fill_value=1, dtype=np.float64)
         for i in range(self.dim):
-            self.prob_table[:, i] += torch.sum(batch == i, axis=1)
+            self.prob_table[:, i] += np.sum(batch == i, axis=1)
 
         # equivalent function, maybe faster, test it out
         # for token in batch.T:
         #     self.prob_table[np.arange(batch.shape[0]), token] += 1
 
-        self.prob_table /= torch.sum(self.prob_table, axis=1).reshape(batch.shape[0], -1)
+        self.prob_table /= np.sum(self.prob_table, axis=1).reshape(batch.shape[0], -1)
 
-        # return the probabilities for the final token
-        return self.prob_table[batch[:, -1]]
+        return self.prob_table

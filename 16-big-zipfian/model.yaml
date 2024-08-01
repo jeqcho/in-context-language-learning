@@ -1,4 +1,4 @@
-run_name: 41M-h-250-e-1000-nw-64-pf-4-microb-1
+run_name: 41M-h-250-e-1000-nw-32-pf-8-microb-4
 dry_run: false
 distributed_strategy: fsdp
 
@@ -52,10 +52,10 @@ scheduler:
 
 data:
   pad_direction: right
-  num_workers: 64
+  num_workers: 32
   drop_last: true
   pin_memory: true
-  prefetch_factor: 4
+  prefetch_factor: 8
   persistent_workers: true
   timeout: 0
   custom_train_dataset: true
@@ -85,7 +85,7 @@ load_path: null
 # max_duration: 476837  # 2T tokens
 max_duration: 10ep  # 20B tokens
 global_train_batch_size: 1024
-device_train_microbatch_size: 1
+device_train_microbatch_size: 4
 
 precision: amp_bf16
   
@@ -117,7 +117,7 @@ evaluators:
       drop_last: true
       pin_memory: true
       persistent_workers: true
-      prefetch_factor: 2
+      prefetch_factor: 1
       custom_train_dataset: true
       use_train_custom_data_config: true
   - label: hmm-ground-truth-random
@@ -128,7 +128,7 @@ evaluators:
       drop_last: true
       pin_memory: true
       persistent_workers: true
-      prefetch_factor: 2
+      prefetch_factor: 1
       custom_train_dataset: true
       use_train_custom_data_config: true
   - label: mc-bigram-validation
@@ -139,7 +139,7 @@ evaluators:
       drop_last: true
       pin_memory: true
       persistent_workers: true
-      prefetch_factor: 2
+      prefetch_factor: 1
       custom_train_dataset: true
       use_train_custom_data_config: true
   - label: mc-unigram-validation
@@ -150,7 +150,7 @@ evaluators:
       drop_last: true
       pin_memory: true
       persistent_workers: true
-      prefetch_factor: 2
+      prefetch_factor: 1
       custom_train_dataset: true
       use_train_custom_data_config: true
   - label: mc-uniform-validation
@@ -161,7 +161,7 @@ evaluators:
       drop_last: true
       pin_memory: true
       persistent_workers: true
-      prefetch_factor: 2
+      prefetch_factor: 1
       custom_train_dataset: true
       use_train_custom_data_config: true
   - label: tinystories
@@ -173,7 +173,7 @@ evaluators:
       drop_last: true
       pin_memory: true
       persistent_workers: true
-      prefetch_factor: 4
+      prefetch_factor: 2
       custom_train_dataset: false
   #########################
   # Perplexity evaluations #

@@ -26,7 +26,7 @@ H=${Hs[$SLURM_ARRAY_TASK_ID-1]}
 E=${Es[$SLURM_ARRAY_TASK_ID-1]}
 PORTS=()
 
-for (( i=25620; i<=25620+50; i++ ))
+for (( i=25650; i<=25650+50; i++ ))
 do
     PORTS+=($i)
 done

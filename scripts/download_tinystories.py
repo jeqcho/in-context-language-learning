@@ -12,7 +12,7 @@ tokenizer.pad_token = tokenizer.eos_token
 # Step 3: Define a tokenization function
 def tokenize_function(examples):
     # Tokenize the 'text' column
-    return tokenizer(examples['text'], truncation=True, padding='max_length', max_length=512)
+    return tokenizer(examples['text'], truncation=True, padding='max_length', max_length=150)
 
 # Step 4: Apply the tokenization function to the dataset
 tokenized_dataset = dataset.map(tokenize_function, batched=True)
@@ -21,4 +21,4 @@ tokenized_dataset = dataset.map(tokenize_function, batched=True)
 input_ids = np.array(tokenized_dataset['input_ids'])
 
 # Step 6: Save the arrays as .npy files
-np.save('/n/holyscratch01/sham_lab/summer_2024/datasets/tinystories/input_ids.npy', input_ids)
+np.save('/n/holyscratch01/sham_lab/summer_2024/datasets/tinystories-150/input_ids.npy', input_ids)
