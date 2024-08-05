@@ -8,7 +8,7 @@ from scipy.stats import zipfian
 
 
 def generate_hmm_sequence(
-    num_symbols: int, num_hidden_states: int, seq_len: int, zipfian_flag: bool, zipfian_scale: int
+    num_symbols: int, num_hidden_states: int, seq_len: int, zipfian_flag: bool, zipfian_scale: int, permutate: bool = False
 ) -> Tuple[torch.Tensor, np.ndarray, torch.Tensor]:
     """
     Generates a sequence of observations from a Hidden Markov Model (HMM) with a given number of symbols, hidden states, and sequence length.
@@ -17,6 +17,9 @@ def generate_hmm_sequence(
     :param num_symbols: the number of symbols in the sequence
     :param num_hidden_states: the number of hidden states in the HMM
     :param seq_len: the length of the sequence
+    :param zipfian_flag: whether to use Zipfian distributed emissions
+    :param zipfian_scale: Increase the variance of Zipfian distribution
+    :param permutate: Permutate the Zipfian distributed emissions
     :return: the observed sequence, the emission matrix, the hidden sequence
     """
     # generate a Markov chain as the hidden states
@@ -30,8 +33,11 @@ def generate_hmm_sequence(
         # Calculate the PMF using scipy
         pmf = zipfian.pmf(ranks, 1, num_symbols)
         pmf /= zipfian_scale
+        if permutate:
+            pmf = np.random.permutation(pmf)
         emission_matrix = np.random.dirichlet(pmf, size=(num_hidden_states,))
     else:
+        assert not permutate # permutate must be False if Zipfian is false
         emission_matrix = np.random.dirichlet(np.ones(num_symbols), size=(num_hidden_states,))
 
     # replace the hidden states with the emissions

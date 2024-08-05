@@ -1,6 +1,7 @@
 run_name: test-unigram
 dry_run: false
 distributed_strategy: fsdp
+hack: 1
 
 wandb:
   name: ${run_name}

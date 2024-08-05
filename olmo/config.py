@@ -27,6 +27,10 @@ from .aliases import PathOrStr
 from .exceptions import OLMoConfigurationError
 from .util import StrEnum
 
+import logging
+
+log = logging.getLogger(__name__)
+
 __all__ = [
     "ActivationType",
     "ActivationCheckpointingStrategy",
@@ -141,6 +145,16 @@ class BaseConfig:
             conf = om.merge(schema, raw)
             if overrides:
                 conf = om.merge(conf, om.from_dotlist(overrides))
+            if conf.hack is not None:
+                if conf.hack == 1:
+                    conf.evaluators[0].label="works"
+                elif conf.hack == 2:
+                    h = conf.data.custom_data_config.hmm_dataset_config.num_hidden_states
+                    for e in conf.evaluators:
+                        if "custom_data_config" in e.data:
+                            e.data.custom_data_config.hmm_dataset_config.num_hidden_states = h
+                else:
+                    raise OLMoConfigurationError(f"Unknown hack code {conf.hack}")
             return cast(C, om.to_object(conf))
         except OmegaConfBaseException as e:
             raise OLMoConfigurationError(str(e))
@@ -618,6 +632,11 @@ class HMMDatasetConfig(BaseConfig):
     Increase the variance of the Dirichlet roughly by this scale
     """
 
+    permutate: bool = False
+    """
+    Whether to permutate the Zipfian distributed emissions
+    """
+
 
 @dataclass
 class CustomDataConfig(BaseConfig):
@@ -941,6 +960,16 @@ class ActivationCheckpointingStrategy(StrEnum):
 class TrainConfig(BaseConfig):
     """
     OLMo training configuration.
+    """
+
+    hack: Optional[int] = None
+    """
+    hack codes for loading yaml customly, see config.py
+    """
+
+    placeholder: Optional[int] = None
+    """
+    Helper variable when using hacks
     """
 
     run_name: Optional[str] = None

@@ -12,6 +12,7 @@ class HMMDataset(Dataset):
         self.epoch_size = epoch_size
         self.zipfian = hmm_dataset_config.zipfian
         self.zipfian_scale = hmm_dataset_config.zipfian_scale
+        self.permutate = hmm_dataset_config.permutate
 
     def __len__(self):
         return self.epoch_size
@@ -23,6 +24,7 @@ class HMMDataset(Dataset):
             seq_len=self.seq_len,
             zipfian_flag=self.zipfian,
             zipfian_scale=self.zipfian_scale,
+            permutate=self.permutate
         )
         return {
             "input_ids": observed_chain,

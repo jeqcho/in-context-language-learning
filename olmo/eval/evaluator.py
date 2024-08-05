@@ -5,9 +5,9 @@ import torch
 from torch.utils.data import DataLoader
 from torchmetrics import MeanMetric, Metric
 
-from olmo.eval.hmm_bigram_evaluator import KLHMMBigramMetric
-from olmo.eval.hmm_random_evaluator import KLHMMRandomMetric
-from olmo.eval.hmm_unigram_evaluator import KLHMMUnigramMetric
+from olmo.eval.bigram_truth_evaluator import BigramTruthKLMetric
+from olmo.eval.uniform_truth_evaluator import UniformTruthKLMetric
+from olmo.eval.unigram_truth_evaluator import UnigramTruthKLMetric
 
 from ..config import EvaluatorType
 from .downstream import ICLMetric
@@ -94,17 +94,17 @@ class Evaluator:
             key = f"eval/{self.label}_{self.eval_metric.metric_type}"
             return {key: value} # tbh the code is the same for all these metrics
         elif self.type == EvaluatorType.hmm_random:
-            assert isinstance(self.eval_metric, KLHMMRandomMetric)
+            assert isinstance(self.eval_metric, UniformTruthKLMetric)
             value = self.eval_metric.compute().item()
             key = f"eval/{self.label}_{self.eval_metric.metric_type}"
             return {key: value} # tbh the code is the same for all these metrics
         elif self.type == EvaluatorType.hmm_bigram:
-            assert isinstance(self.eval_metric, KLHMMBigramMetric)
+            assert isinstance(self.eval_metric, BigramTruthKLMetric)
             value = self.eval_metric.compute().item()
             key = f"eval/{self.label}_{self.eval_metric.metric_type}"
             return {key: value} # tbh the code is the same for all these metrics
         elif self.type == EvaluatorType.hmm_unigram:
-            assert isinstance(self.eval_metric, KLHMMUnigramMetric)
+            assert isinstance(self.eval_metric, UnigramTruthKLMetric)
             value = self.eval_metric.compute().item()
             key = f"eval/{self.label}_{self.eval_metric.metric_type}"
             return {key: value} # tbh the code is the same for all these metrics
@@ -146,15 +146,15 @@ class Evaluator:
             self.eval_metric.update(batch, logits)
         elif self.type == EvaluatorType.hmm_random:
             # hmm ground truth
-            assert isinstance(self.eval_metric, KLHMMRandomMetric)
+            assert isinstance(self.eval_metric, UniformTruthKLMetric)
             self.eval_metric.update(batch, logits)
         elif self.type == EvaluatorType.hmm_bigram:
             # hmm ground truth
-            assert isinstance(self.eval_metric, KLHMMBigramMetric)
+            assert isinstance(self.eval_metric, BigramTruthKLMetric)
             self.eval_metric.update(batch, logits)
         elif self.type == EvaluatorType.hmm_unigram:
             # hmm ground truth
-            assert isinstance(self.eval_metric, KLHMMUnigramMetric)
+            assert isinstance(self.eval_metric, UnigramTruthKLMetric)
             self.eval_metric.update(batch, logits)
         else:
             raise ValueError(f"Unexpected evaluator type '{self.type}'")

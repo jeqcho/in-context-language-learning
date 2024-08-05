@@ -3,15 +3,16 @@ import logging
 import torch
 import torch.nn.functional as F
 from torchmetrics import Metric
-from .ngram_preprocess_batch import ngram_preprocess_batch
+
+from olmo.eval.bigram_model import BatchedBigramModel
 import numpy as np
 
 log = logging.getLogger(__name__)
 
 
-class KLHMMRandomMetric(Metric):
+class BigramTruthKLMetric(Metric):
     full_state_update: bool = False
-    metric_type = "kl-hmm-random-metric-type"
+    metric_type = "bigram-truth-kl"
 
     def __init__(self, dim=10) -> None:
         super().__init__(sync_on_compute=True)
@@ -26,6 +27,8 @@ class KLHMMRandomMetric(Metric):
 
     def update(self, batch: Dict[str, Any], logits: torch.Tensor):
         # batch = ngram_preprocess_batch(batch)
+        log.info(f"input device {batch['input_ids'].device}")
+        log.info(f"logits device {logits.device}")
 
         # since the GPU is running out of memory
         # run these operations in CPU instead
@@ -36,12 +39,10 @@ class KLHMMRandomMetric(Metric):
 
         # get the Q and P distribution for KL-divergence
         ps = torch.tensor(np.stack([d["emission_probs"] for d in batch["metadata"]], axis=0), device=logits.device)
-        # current_logits = logits[:, -1, : self.dim]
-        # use uniform logits as random
-        current_logits = torch.full(
-            size=(logits.shape[0], self.dim), fill_value=1 / self.dim, device=logits.device
-        )
-        qs = F.log_softmax(current_logits, dim=1)
+        # train a bigram model
+        batched_bigram_model = BatchedBigramModel(dim=self.dim)
+        qs_exp = batched_bigram_model.load(batch["input_ids"].numpy())
+        qs = F.log_softmax(qs_exp, dim=1)
         self.kl_divs.append(F.kl_div(qs, ps, reduction="batchmean").item())
 
     def compute(self) -> torch.Tensor:

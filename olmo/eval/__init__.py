@@ -4,10 +4,10 @@ import torch
 from torch.utils.data import DataLoader, DistributedSampler
 from torchmetrics import MeanMetric, Metric
 
-from olmo.eval.hmm_bigram_evaluator import KLHMMBigramMetric
+from olmo.eval.bigram_truth_evaluator import BigramTruthKLMetric
 from olmo.eval.hmm_evaluator import KLHMMMetric
-from olmo.eval.hmm_random_evaluator import KLHMMRandomMetric
-from olmo.eval.hmm_unigram_evaluator import KLHMMUnigramMetric
+from olmo.eval.uniform_truth_evaluator import UniformTruthKLMetric
+from olmo.eval.unigram_truth_evaluator import UnigramTruthKLMetric
 
 from ..config import EvaluatorConfig, EvaluatorType, TrainConfig, CustomDataType
 from ..exceptions import OLMoConfigurationError
@@ -235,11 +235,11 @@ def build_evaluator(
         # use KL divergence
         def make_metric():
             if eval_config.data.custom_data_config.custom_data_type == CustomDataType.markov:
-                return KLHMMRandomMetric(dim=eval_config.data.custom_data_config.markov_dataset_config.num_states).to(
+                return UniformTruthKLMetric(dim=eval_config.data.custom_data_config.markov_dataset_config.num_states).to(
                     device
                 )
             else:
-                return KLHMMRandomMetric(dim=eval_config.data.custom_data_config.hmm_dataset_config.num_symbols).to(
+                return UniformTruthKLMetric(dim=eval_config.data.custom_data_config.hmm_dataset_config.num_symbols).to(
                     device
                 )
 
@@ -263,11 +263,11 @@ def build_evaluator(
         # use KL divergence
         def make_metric():
             if eval_config.data.custom_data_config.custom_data_type == CustomDataType.markov:
-                return KLHMMBigramMetric(dim=eval_config.data.custom_data_config.markov_dataset_config.num_states).to(
+                return BigramTruthKLMetric(dim=eval_config.data.custom_data_config.markov_dataset_config.num_states).to(
                     device
                 )
             else:
-                return KLHMMBigramMetric(dim=eval_config.data.custom_data_config.hmm_dataset_config.num_symbols).to(
+                return BigramTruthKLMetric(dim=eval_config.data.custom_data_config.hmm_dataset_config.num_symbols).to(
                     device
                 )
 
@@ -291,11 +291,11 @@ def build_evaluator(
         # use KL divergence
         def make_metric():
             if eval_config.data.custom_data_config.custom_data_type == CustomDataType.markov:
-                return KLHMMUnigramMetric(dim=eval_config.data.custom_data_config.markov_dataset_config.num_states).to(
+                return UnigramTruthKLMetric(dim=eval_config.data.custom_data_config.markov_dataset_config.num_states).to(
                     device
                 )
             else:
-                return KLHMMUnigramMetric(dim=eval_config.data.custom_data_config.hmm_dataset_config.num_symbols).to(
+                return UnigramTruthKLMetric(dim=eval_config.data.custom_data_config.hmm_dataset_config.num_symbols).to(
                     device
                 )
 
