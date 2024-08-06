@@ -622,9 +622,9 @@ class HMMDatasetConfig(BaseConfig):
     Number of hidden states 
     """
 
-    zipfian: bool = False
+    zipfian_ratio: float = 0.0
     """
-    Initialize the starting emission probabilities by using Zipfian (instead of all ones) inside the Dirichlet
+    The proportion of data that is Zipfian
     """
 
     zipfian_scale: int = 1
@@ -634,7 +634,7 @@ class HMMDatasetConfig(BaseConfig):
 
     permutate: bool = False
     """
-    Whether to permutate the Zipfian distributed emissions
+    Whether to randomly permutate the data. Used for zipfian
     """
 
 

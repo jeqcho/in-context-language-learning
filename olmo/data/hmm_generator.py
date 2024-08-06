@@ -37,7 +37,6 @@ def generate_hmm_sequence(
             pmf = np.random.permutation(pmf)
         emission_matrix = np.random.dirichlet(pmf, size=(num_hidden_states,))
     else:
-        assert not permutate # permutate must be False if Zipfian is false
         emission_matrix = np.random.dirichlet(np.ones(num_symbols), size=(num_hidden_states,))
 
     # replace the hidden states with the emissions

@@ -62,10 +62,10 @@ data:
   custom_data_config:
     custom_data_type: hmm
     hmm_dataset_config:
-      num_hidden_states: 5
+      num_hidden_states: 3
       seq_len: 150
-      num_symbols: 10
-      zipfian: false
+      num_symbols: 5
+      zipfian_ratio: 0
       permutate: false
 
 tokenizer:
@@ -99,7 +99,7 @@ eval_interval: 50
 eval_subset_num_batches: -1
 device_eval_batch_size: ${device_train_microbatch_size}
 evaluators:
-  - label: hmm-ground-truth-bigram
+  - label: bigram-vs-truth
     type: hmm_bigram
     subset_num_batches: 2
     data:
@@ -110,7 +110,7 @@ evaluators:
       prefetch_factor: 2
       custom_train_dataset: true
       use_train_custom_data_config: true
-  - label: hmm-ground-truth-normal
+  - label: model-vs-truth-normal
     type: hmm
     subset_num_batches: 2
     data:
@@ -124,12 +124,12 @@ evaluators:
       custom_data_config:
         custom_data_type: hmm
         hmm_dataset_config:
-          num_hidden_states: 5
+          num_hidden_states: 3
           seq_len: 150
-          num_symbols: 10
-          zipfian: false
+          num_symbols: 5
+          zipfian_ratio: 0
           permutate: false
-  - label: hmm-ground-truth-zipfian
+  - label: model-vs-truth-zipfian
     type: hmm
     subset_num_batches: 2
     data:
@@ -143,12 +143,12 @@ evaluators:
       custom_data_config:
         custom_data_type: hmm
         hmm_dataset_config:
-          num_hidden_states: 5
+          num_hidden_states: 3
           seq_len: 150
-          num_symbols: 10
-          zipfian: true
+          num_symbols: 5
+          zipfian_ratio: 1
           permutate: false
-  - label: hmm-ground-truth-zipfian-permutate
+  - label: model-vs-truth-zipfian-permutate
     type: hmm
     subset_num_batches: 2
     data:
@@ -162,12 +162,12 @@ evaluators:
       custom_data_config:
         custom_data_type: hmm
         hmm_dataset_config:
-          num_hidden_states: 5
+          num_hidden_states: 3
           seq_len: 150
-          num_symbols: 10
-          zipfian: true
+          num_symbols: 5
+          zipfian_ratio: 1
           permutate: true
-  - label: hmm-ground-truth-random
+  - label: uniform-vs-truth
     type: hmm_random
     subset_num_batches: 2
     data:
@@ -178,7 +178,7 @@ evaluators:
       prefetch_factor: 2
       custom_train_dataset: true
       use_train_custom_data_config: true
-  - label: hmm-ground-truth-unigram
+  - label: unigram-vs-truth
     type: hmm_unigram
     subset_num_batches: 2
     data:
@@ -189,7 +189,7 @@ evaluators:
       prefetch_factor: 2
       custom_train_dataset: true
       use_train_custom_data_config: true
-  - label: mc-bigram-validation
+  - label: model-vs-bigram
     type: bg
     subset_num_batches: 2
     data:
@@ -200,7 +200,7 @@ evaluators:
       prefetch_factor: 2
       custom_train_dataset: true
       use_train_custom_data_config: true
-  - label: mc-unigram-validation
+  - label: model-vs-unigram
     type: ug
     subset_num_batches: 2
     data:
@@ -211,7 +211,7 @@ evaluators:
       prefetch_factor: 2
       custom_train_dataset: true
       use_train_custom_data_config: true
-  - label: mc-uniform-validation
+  - label: model-vs-uniform
     type: uf
     subset_num_batches: 2
     data:
