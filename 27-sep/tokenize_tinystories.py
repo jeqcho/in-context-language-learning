@@ -6,10 +6,13 @@ import os
 from pathlib import Path
 from rich.progress import track
 
+tokenizer_name = "tokenizer-500"
+max_length = 1024
+split = "test"
 # %%
 # Step 1: Load the dataset
 data_files={"train": "TinyStoriesV2-GPT4-train.txt", "test": "TinyStoriesV2-GPT4-valid.txt"}
-dataset = load_dataset('roneneldan/TinyStories',data_files=data_files, split='train')  # Replace 'dataset_name' and 'split' as needed
+dataset = load_dataset('roneneldan/TinyStories',data_files=data_files, split=split)  # Replace 'dataset_name' and 'split' as needed
 print(dataset)
 
 #%%
@@ -33,14 +36,13 @@ data_dict = {"text": arr}
 dataset = Dataset.from_dict(data_dict)
 # Step 2: Load a tokenizer
 # %%
-tokenizer_name = "tokenizer-1k"
 tokenizer = AutoTokenizer.from_pretrained(f"../olmo_data/tokenizers/{tokenizer_name}")  # Replace with your model's tokenizer
 tokenizer.pad_token = tokenizer.eos_token
 
 # Step 3: Define a tokenization function
 def tokenize_function(examples):
     # Tokenize the 'text' column
-    return tokenizer(examples['text'], truncation=True, padding='max_length', max_length=2048)
+    return tokenizer(examples['text'], truncation=True, padding='max_length', max_length=max_length)
 
 # Step 4: Apply the tokenization function to the dataset
 tokenized_dataset = dataset.map(tokenize_function, batched=True)
@@ -48,11 +50,14 @@ tokenized_dataset = dataset.map(tokenize_function, batched=True)
 # Step 5: Extract the tokenized 'input_ids' into a NumPy array
 print("Counting tokens...")
 total_tokens = 0
+mx = 0
 for ex in track(tokenized_dataset):
     total_tokens += len(ex["input_ids"])  # type: ignore
+    mx = max(mx,len(ex["input_ids"]) )
+print(f"Max tokens: {mx}")
 print(f"Total tokens: {total_tokens:,d}")
 
-foldername = f"/n/holyscratch01/sham_lab/summer_2024/datasets/tinystories-{tokenizer_name}-maxlength-1024"
+foldername = f"/n/holyscratch01/sham_lab/summer_2024/datasets/tinystories-{split}-{tokenizer_name}-maxlength-{max_length}"
 print(f"Saving results to '{foldername}'...")
 output_dir = Path(foldername)
 output_dir.mkdir(exist_ok=True, parents=True)

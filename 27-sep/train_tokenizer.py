@@ -1,8 +1,8 @@
 #%%
 from transformers import AutoTokenizer
 
-vocab_size=1000
-tokenizer_name="tokenizer-1k"
+vocab_size=500
+tokenizer_name="tokenizer-500"
 old_tokenizer = AutoTokenizer.from_pretrained("gpt2")
 # %%
 

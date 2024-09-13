@@ -1,0 +1,9 @@
+First we train the tokenizer using `train_tokenizer.py`.
+
+Then we tokenize TinyStories using `tokenize_tinystories.py`.
+
+Then we fit the HMMs using `train_hmm.py`.
+
+We have tried to fit the HMMs, but it took too much time (>8 hours for a 1024-tokenizer with max length 1024). See job 46749915.
+
+We are now thinking of scaling down to use 500-tokenizer with max length 500 and the first 1000 rows. This is job 46800667.
