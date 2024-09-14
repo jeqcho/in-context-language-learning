@@ -22,7 +22,7 @@ mamba activate olmo2
 
 PORTS=()
 
-for (( i=25670; i<=25670+50; i++ ))
+for (( i=25770; i<=25770+50; i++ ))
 do
     PORTS+=($i)
 done

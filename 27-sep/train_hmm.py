@@ -31,7 +31,7 @@ def main():
     # Load the .npy file
 
     # shortcut, train on only the first 1000 stories
-    rows = 1000
+    rows = 5000
     total_tokens = rows * maxlength
 
     #%%
@@ -50,7 +50,7 @@ def main():
     # %%
     start_time = time.time()
     model = hmm.CategoricalHMM(n_components=n_components).fit(wrapped_data, lengths)
-    with open(f"/n/holyscratch01/sham_lab/summer_2024/models/hmm-{n_components}-{split}-{tokenizer_name}-maxlength-{maxlength}.pkl", "wb") as file: pickle.dump(model, file)
+    with open(f"/n/holyscratch01/sham_lab/summer_2024/models/hmm-{n_components}-{split}-{tokenizer_name}-maxlength-{maxlength}-rows-{rows}.pkl", "wb") as file: pickle.dump(model, file)
     print(f"{n_components} component: %.2f seconds" % (time.time() - start_time))
     #%%
 

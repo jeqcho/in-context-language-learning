@@ -7,3 +7,7 @@ Then we fit the HMMs using `train_hmm.py`.
 We have tried to fit the HMMs, but it took too much time (>8 hours for a 1024-tokenizer with max length 1024). See job 46749915.
 
 We are now thinking of scaling down to use 500-tokenizer with max length 500 and the first 1000 rows. This is job 46800667.
+
+Thankfully, job 46798305 ran successfully, which fitted a 100-hmm using 1000-tokenizer of the entire test data with 1024 max length.
+
+First transformer trained successfully, saved at `/n/holyscratch01/sham_lab/summer_2024/checkpoints/1k-vocab-1024-maxlength-100-components-46816664/step1000-unsharded`
