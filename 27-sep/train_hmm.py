@@ -21,7 +21,7 @@ def main():
     #%%
     tokenizer_name = "tokenizer-500"
     split = "test"
-    maxlength = 1024
+    maxlength = 500
     total_tokens = 13815500 # Replace with the actual total number of tokens
     input_ids_path = f"/n/holyscratch01/sham_lab/summer_2024/datasets/tinystories-{split}-{tokenizer_name}-maxlength-{maxlength}/input_ids.npy"
     print(f"tokenizer_name: {tokenizer_name}")

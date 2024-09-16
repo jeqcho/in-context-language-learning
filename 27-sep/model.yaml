@@ -64,7 +64,7 @@ data:
     hmm_dataset_config:
       custom_hmm: /n/holyscratch01/sham_lab/summer_2024/models/hmm-250-test-tokenizer-500-maxlength-500.pkl
       num_hidden_states: 100
-      seq_len: 1024
+      seq_len: 500
       num_symbols: 1000
       zipfian_ratio: 0.99
       permutate: true

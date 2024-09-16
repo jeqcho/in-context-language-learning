@@ -607,6 +607,11 @@ class MarkovDatasetConfig(BaseConfig):
 
 @dataclass
 class HMMDatasetConfig(BaseConfig):
+    custom_hmm: Optional[str] = ''
+    """
+    File path to a HMM as .pkl.
+    """
+
     num_symbols: Optional[int] = 3
     """
     Number of states (possible unique emissions) in a HMM chain

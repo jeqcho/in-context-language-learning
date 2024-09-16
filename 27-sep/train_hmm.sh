@@ -4,10 +4,10 @@
 #SBATCH --partition=kempner
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=24
-#SBATCH --gres=gpu:1
+#SBATCH --cpus-per-task=48
+#SBATCH --gres=gpu:0
 #SBATCH --time=0-08:00
-#SBATCH --mem=80G
+#SBATCH --mem=160G
 #SBATCH --output=logs/test-%A-%a.out
 #SBATCH --error=logs/%A-%a.err
 #SBATCH --mail-type=END
