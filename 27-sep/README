@@ -11,3 +11,31 @@ We are now thinking of scaling down to use 500-tokenizer with max length 500 and
 Thankfully, job 46798305 ran successfully, which fitted a 100-hmm using 1000-tokenizer of the entire test data with 1024 max length.
 
 First transformer trained successfully, saved at `/n/holyscratch01/sham_lab/summer_2024/checkpoints/1k-vocab-1024-maxlength-100-components-46816664/step1000-unsharded`
+
+Job 46800667 trained a 100-hmm using 500-tokenizer and 500-maxlength.
+
+Weirdly, `hmm-100-test-tokenizer-500-maxlength-500-rows-5000.pkl` gives a emission size of (100,69) but (100,500) expected.
+
+9/17
+Realized a bug in the 500-tokenizer: we didn't include spaces. Added the space back in and rerun `tokenize_tinystories.py` and `train_hmm.py`.
+
+We tried `hmm-100-test-tokenizer-1k-maxlength-1024.pkl`. Pretty encouraging results using sampling
+
+> One day, a boy named Tim went to the park to play. He
+> Output
+> 
+> f picked re the,ice the gra theh
+
+Number of tokens per story for 1k-tokenizer
+Q3 (75th Percentile): 276.0
+90th Percentile: 363.0
+99th Percentile: 747.0
+
+Number of tokens per story for 500-tokenizer
+Q1 (25th Percentile): 623.0
+Q3 (75th Percentile): 852.0
+90th Percentile: 1079.0
+99th Percentile: 2176.800000000003
+Max: 4138
+
+Now training 1k and 500 tokenizer, both using 500 maxlength

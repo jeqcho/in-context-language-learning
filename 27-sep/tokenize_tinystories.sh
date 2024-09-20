@@ -19,6 +19,6 @@ module load python
 # Activate conda environment (optional)
 mamba activate olmo2
 
-PORT=25635
+PORT=25630
 
 torchrun --master_port=$PORT --nproc_per_node=1 ./tokenize_tinystories.py

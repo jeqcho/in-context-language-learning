@@ -8,8 +8,8 @@
 #SBATCH --gres=gpu:0
 #SBATCH --time=0-08:00
 #SBATCH --mem=160G
-#SBATCH --output=logs/test-%A-%a.out
-#SBATCH --error=logs/%A-%a.err
+#SBATCH --output=logs/train-hmm-%A-%a.out
+#SBATCH --error=logs/train-hmm-%A-%a.err
 #SBATCH --mail-type=END
 #SBATCH --mail-user=jeqin_chooi+slurm@college.harvard.edu
 #SBATCH --array=1-6
@@ -22,7 +22,7 @@ mamba activate olmo2
 
 PORTS=()
 
-for (( i=25770; i<=25770+50; i++ ))
+for (( i=25870; i<=25870+50; i++ ))
 do
     PORTS+=($i)
 done

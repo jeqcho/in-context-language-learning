@@ -14,24 +14,27 @@ def main():
                         help='SLURM task ID')
     args = parser.parse_args()
     #%%
-    list_of_n_components = [100, 250, 500, 750, 1000, 2000, 4000]
+    list_of_n_components = [50, 100, 250, 500, 750, 1000]
     # task ids are one-indexed
     n_components = list_of_n_components[args.task_id-1]
     
     #%%
-    tokenizer_name = "tokenizer-500"
+    tokenizer_name = "tokenizer-1k"
     split = "test"
     maxlength = 500
     total_tokens = 13815500 # Replace with the actual total number of tokens
     input_ids_path = f"/n/holyscratch01/sham_lab/summer_2024/datasets/tinystories-{split}-{tokenizer_name}-maxlength-{maxlength}/input_ids.npy"
+    # shortcut, train on only the first 1000 stories
+    rows = 1000
     print(f"tokenizer_name: {tokenizer_name}")
     print(f"split: {split}")
     print(f"maxlength: {maxlength}")
     print(f"total_tokens: {total_tokens}")
+    print(f"total rows: {total_tokens/maxlength}")
+    print(f"chosen rows: {rows}")
     # Load the .npy file
 
-    # shortcut, train on only the first 1000 stories
-    rows = 5000
+    # override total tokens
     total_tokens = rows * maxlength
 
     #%%

@@ -7,7 +7,7 @@ from pathlib import Path
 from rich.progress import track
 
 tokenizer_name = "tokenizer-500"
-max_length = 1024
+max_length = 500
 split = "test"
 # %%
 # Step 1: Load the dataset
@@ -40,12 +40,27 @@ tokenizer = AutoTokenizer.from_pretrained(f"../olmo_data/tokenizers/{tokenizer_n
 tokenizer.pad_token = tokenizer.eos_token
 
 # Step 3: Define a tokenization function
+num_actual_tokens = []
 def tokenize_function(examples):
     # Tokenize the 'text' column
+    global num_actual_tokens
+    en = tokenizer(examples['text'])['input_ids']
+    for tok in en:
+        num_actual_tokens.append(len(tok))
     return tokenizer(examples['text'], truncation=True, padding='max_length', max_length=max_length)
 
 # Step 4: Apply the tokenization function to the dataset
 tokenized_dataset = dataset.map(tokenize_function, batched=True)
+
+# Calculating and printing statistics
+num_actual_tokens = np.array(num_actual_tokens)
+print(f"Mean: {np.mean(num_actual_tokens)}")
+print(f"Median: {np.median(num_actual_tokens)}")
+print(f"Q1 (25th Percentile): {np.percentile(num_actual_tokens, 25)}")
+print(f"Q3 (75th Percentile): {np.percentile(num_actual_tokens, 75)}")
+print(f"90th Percentile: {np.percentile(num_actual_tokens, 90)}")
+print(f"99th Percentile: {np.percentile(num_actual_tokens, 99)}")
+print(f"Max: {np.max(num_actual_tokens)}")
 
 # Step 5: Extract the tokenized 'input_ids' into a NumPy array
 print("Counting tokens...")
