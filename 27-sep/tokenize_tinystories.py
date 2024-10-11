@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 from rich.progress import track
 
-tokenizer_name = "tokenizer-500"
+tokenizer_name = "tokenizer-828"
 max_length = 500
 split = "test"
 # %%

@@ -6,13 +6,13 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=48
 #SBATCH --gres=gpu:0
-#SBATCH --time=0-08:00
+#SBATCH --time=0-016:00
 #SBATCH --mem=160G
 #SBATCH --output=logs/train-hmm-%A-%a.out
 #SBATCH --error=logs/train-hmm-%A-%a.err
 #SBATCH --mail-type=END
 #SBATCH --mail-user=jeqin_chooi+slurm@college.harvard.edu
-#SBATCH --array=1-6
+#SBATCH --array=1-4
 
 # Load modules
 module load python
@@ -22,7 +22,7 @@ mamba activate olmo2
 
 PORTS=()
 
-for (( i=25870; i<=25870+50; i++ ))
+for (( i=25825; i<=25825+50; i++ ))
 do
     PORTS+=($i)
 done

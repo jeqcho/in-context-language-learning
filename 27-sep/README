@@ -39,3 +39,197 @@ Q3 (75th Percentile): 852.0
 Max: 4138
 
 Now training 1k and 500 tokenizer, both using 500 maxlength
+
+### 500-tokenizer, 50 components
+hmm-50-test-tokenizer-500-maxlength-500-rows-5000.pkl
+
+```
+Input
+
+Once upon a time there was a little boy named Ben. Ben loved to explore the world around him.
+Output
+
+ the was n was n was n was n was n was n
+---------------
+Input
+
+One day, a boy named Tim went to the park to play. He
+Output
+
+s n was n was n was n was n was n was n 
+---------------
+```
+
+
+### 500-tokenizer, 100 components
+hmm-100-test-tokenizer-500-maxlength-500-rows-5000.pkl
+
+```
+Input
+
+Once upon a time there was a little boy named Ben. Ben loved to explore the world around him.
+Output
+
+ the bar, taid taid taid taid taid taid 
+---------------
+Input
+
+One day, a boy named Tim went to the park to play. He
+Output
+
+y taid taid taid taid taid taid taid tai
+---------------
+```
+
+### 1k tokenizer, 50 components
+
+```
+Input
+
+Once upon a time there was a little boy named Ben. Ben loved to explore the world around him.
+Output
+
+ the mom. They was a. They was a
+---------------
+Input
+
+One day, a boy named Tim went to the park to play. He
+Output
+
+ play a. They was a. They was a
+---------------
+```
+
+### 1k tokenizer, 100 components
+
+```
+Input
+
+Once upon a time there was a little boy named Ben. Ben loved to explore the world around him.
+Output
+
+<|endoftext|><|endoftext|><|endoftext|><|endoftext|><|endoftext|><|endoftext|><|endoftext|><|endoftext|><|endoftext|><|endoftext|>
+---------------
+Input
+
+One day, a boy named Tim went to the park to play. He
+Output
+
+very!" JOne bro day and funh.
+---------------
+```
+
+### 1k tokenizer, 250 components
+
+```
+Input
+
+Once upon a time there was a little boy named Ben. Ben loved to explore the world around him.
+Output
+
+ rirbs. He was to, in the pc friends. They day, the pring, the pring, the pring, the pring, the p
+---------------
+Input
+
+One day, a boy named Tim went to the park to play. He
+Output
+
+pped it. He was to, in the pc friends. They day, the pring, the pring, the pring, the pring, the p
+---------------
+```
+
+
+
+### sampled, 1k tokenizer, 250 components
+
+```
+---------------
+Input
+
+Once upon a time there was a
+Output
+
+'t girl to st other. she could to,,ppst. They started toatass inp with big mom it, the good, if not givece. They dayny dad,
+---------------
+```
+
+### sampled, 1k tokenizer, 100 components
+
+```
+---------------
+Input
+
+Once upon a time there was a
+Output
+
+ no sawy in thech "He eetppedat." and did, mom.
+One rei, butitty wantedouroughtum smiled mom was so "b'mig around the
+---------------
+```
+
+### sampled, 1k tokenizer, 50 components
+
+```
+---------------
+Input
+
+Once upon a time there was a
+Output
+
+ cov Tim was with sa will. She n much andr went always the spon it saw a happy He walked time.! she<|endoftext|>
+<|endoftext|><|endoftext|><|endoftext|><|endoftext|><|endoftext|><|endoftext|><|endoftext|><|endoftext|><|endoftext|><|endoftext|>
+---------------
+```
+
+Now training with 828-tokenizer on 1000 rows for many states, and 5000 rows for less states.
+
+
+### sampled, 500 tokenizer, 50 components, 1000 rows
+
+```
+Input
+
+Once upon a time there was a little boy named Ben. Ben loved to explore the world around him.
+Output
+
+yd Soy cake. sn an. Th fokkmA!  e  fi'y 
+---------------
+Input
+
+One day, a boy named Tim went to the park to play. He
+Output
+
+p siy, a Lhgoet hots. theoey. Htie did m
+---------------
+```
+
+### sampled, 500 tokenizer, 50 components, 5000 rows
+
+```
+Input
+
+Once upon a time there was a little boy named Ben. Ben loved to explore the world around him.
+Output
+
+ the barde
+---------------
+Input
+
+One day, a boy named Tim went to the park to play. He
+Output
+
+teaaheaial
+---------------
+```
+
+
+## 26 September
+I am trying to see how well can HMM model language, or complete TinyStories.
+I have identified two papers that will be central to my research
+1. [Scaling Hidden Markov Language Models](https://arxiv.org/pdf/2011.04640)
+2. [On Limitation of Transformer for Learning HMMs](https://arxiv.org/pdf/2406.04089)
+
+It could be possible that a transformer trained on HMMs will perform better than HMMs in test-time.
+
+## 27 September
+Meeting with Eran suggests that we can use a word-level tokenizer and subset the tinystories to those with those 1k words.

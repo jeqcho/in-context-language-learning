@@ -14,18 +14,18 @@ def main():
                         help='SLURM task ID')
     args = parser.parse_args()
     #%%
-    list_of_n_components = [50, 100, 250, 500, 750, 1000]
+    list_of_n_components = [400, 500, 600, 700]
     # task ids are one-indexed
     n_components = list_of_n_components[args.task_id-1]
     
     #%%
-    tokenizer_name = "tokenizer-1k"
+    tokenizer_name = "tokenizer-828"
     split = "test"
-    maxlength = 500
+    maxlength = 300
     total_tokens = 13815500 # Replace with the actual total number of tokens
     input_ids_path = f"/n/holyscratch01/sham_lab/summer_2024/datasets/tinystories-{split}-{tokenizer_name}-maxlength-{maxlength}/input_ids.npy"
     # shortcut, train on only the first 1000 stories
-    rows = 1000
+    rows = 5000
     print(f"tokenizer_name: {tokenizer_name}")
     print(f"split: {split}")
     print(f"maxlength: {maxlength}")
@@ -49,6 +49,8 @@ def main():
     # wrap each number with []
     wrapped_data = np.array([[x] for x in data])
     print("Done wrapping")
+
+    print(f"training for num states: {n_components}")
 
     # %%
     start_time = time.time()
