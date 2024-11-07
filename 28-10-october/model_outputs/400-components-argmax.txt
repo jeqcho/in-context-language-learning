@@ -1,0 +1,92 @@
+Input:
+once upon a time there was a little boy named ben. ben loved to explore the world around him.
+Output:
+waited^also^sea^gave^red^also^fire^lived^or^little
+
+---------------
+
+Input:
+one day, a boy named tim went to the park to play. he
+Output:
+waited^also^game^also^game^also^kept^also^red^also
+
+---------------
+
+Input:
+once upon a time, there was a <|endoftext|> <|endoftext|>. it was very pretty. the <|endoftext|> lived in a small house with a girl named lily and her mom.
+one day, lily and her mom went outside to play. before they left, her mom said, "lily, please close the door." lily <|endoftext|> the door and they played all day.
+when they came back, they saw the <|endoftext|> <|endoftext|> on the floor. it was broken! lily
+Output:
+also^soon^also^:^also^helped^also^sea^also^lost
+
+---------------
+
+Input:
+once upon a time there was a little boy named ben. ben loved to explore the world around him. he saw many <|endoftext|> things, like beautiful <|endoftext|> that were on <|endoftext|> in a store. one day, ben was walking through the
+Output:
+always^also^sea^also^what^also^i^also^we^also
+
+---------------
+
+Input:
+once upon a time there was a little boy named ben. ben loved to explore the world around him. he saw many <|endoftext|> things, like beautiful <|endoftext|> that were on <|endoftext|> in a store. one day, ben was walking through
+Output:
+also^hand^also^noise^lived^also^red^with^also^watched
+
+---------------
+
+Input:
+once upon a time there was a little boy named ben. ben loved to explore the world around him. he saw many <|endoftext|> things, like beautiful <|endoftext|> that were on <|endoftext|> in a store. one day, ben was walking
+Output:
+gave^hair^also^your^also^needed^also^red^also^important
+
+---------------
+
+Input:
+once upon a time there was a little boy named ben. ben loved to explore the world around him. he saw many <|endoftext|> things, like beautiful <|endoftext|> that were on <|endoftext|> in a store. one day, ben was
+Output:
+park^waited^also^mom^also^get^also^here^also^anything
+
+---------------
+
+Input:
+once upon a time there was a little boy named ben. ben loved to explore the world around him. he saw many <|endoftext|> things, like beautiful <|endoftext|> that were on <|endoftext|> in a store. one day, ben
+Output:
+red^also^you^also^later^also^hopped^also^loud^lived
+
+---------------
+
+Input:
+once upon a time there was a
+Output:
+also^surprised^also^red^also^car^also^its^also^won
+
+---------------
+
+Input:
+once upon a time there was a little
+Output:
+also^hopped^also^other^also^dance^lived^also^sea^also
+
+---------------
+
+Input:
+once upon a time, there was a brown dog. the dog liked to run and play. one day, the dog went far away from home. he did not know how to go back.
+the dog saw a big tree. he thought, "maybe if i go around the tree, i will find my home." he went around the tree, but he did not find his home. the dog was sad.
+then, the dog saw a little girl. the girl knew the dog. she said, "i know where your home is!" the girl took the dog back to his home. the dog was so happy. he did a big jump and gave the girl a hug. from that day, the
+
+Output:
+also^just^lived^also^cry^also^close^also^kept^also
+
+---------------
+
+Input:
+once upon a time, there was a tall tree. a little cat lived in the tree. the cat was happy and liked to play all day.
+one day, a big man came to the tree. he wanted to cut the tree down. the cat was scared and said, "please don't cut my tree!" the big man stopped and looked at the cat. he did not know the cat could talk.
+the cat and the big man became friends. they played together and had fun. the big man decided not to cut the tree. the cat
+
+Output:
+chair^also^can^also^kept^also^near^stick^seen^or
+
+---------------
+
