@@ -22,3 +22,11 @@ You can preview the file with `head -n 50 TinyStoriesV2-GPT4-train.txt`.
 ## Processing the TinyStories dataset
 
 The TinyStories data is a text file where stories are separated by `<|endoftext|>`. We will remove this since we only care about sentence structure. We process it at `process_tinystories.ipynb`.
+
+We removed all lines that contain characters that are not alphabets or periods or commas or spaces. That includes quotations marks, exclamation marks and numbers.
+
+The resulting file has one sentence on each line. Each sentence ends with the period. Each sentence contains only lowercase alphabets, periods or commas or spaces. Periods and commas are separated from other characters with a space.
+
+## Subsetting the TinyStories dataset
+
+We rank each word in the processed dataset by frequency. We then plot how much sentences we have if we only allow ourselves to a certain number of words. For simplicity
