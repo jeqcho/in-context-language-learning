@@ -28,10 +28,17 @@ class custom_tokenizer:
 
     def tokenize_word(self, word: str):
         if word not in self.tokenizer_dict.keys():
+            print(f"WARNING: {word} not in dict, using eos_id {self.eos_id} instead")
             return self.eos_id
         return self.tokenizer_dict[word]
 
     def detokenize_sentence(self, sentence: List[int], highlight: str = "") -> str:
+        """Use the highlight to break apart tokens
+        
+        e.g. highlight ^ gives "The^boy^is^asleep^."
+        if the words outputted doesn't have spaces.
+        
+        """
         return highlight.join([self.detokenize_dict[token_id] for token_id in sentence])
 
     def tokenize_sentences(self, sentences: List[str]) -> List[List[int]]:
