@@ -27,6 +27,8 @@ We removed all lines that contain characters that are not alphabets or periods o
 
 The resulting file has one sentence on each line. Each sentence ends with the period. Each sentence contains only lowercase alphabets, periods or commas or spaces. Periods and commas are separated from other characters with a space.
 
+Note that the story structure is disrupted because we removed entire lines that include non-accepted characters.
+
 ## Subsetting the TinyStories dataset
 
 We rank each word in the processed dataset by frequency. We then plot how much sentences we have if we only allow ourselves to a certain number of words. We do this at `frequent_words.ipynb`.
@@ -36,13 +38,29 @@ We rank each word in the processed dataset by frequency. We then plot how much s
 We created datasets that use the top 100, 200, 300, 400, 500 words respectively.
 
 Number of sentences
-['1,071,376', '2,845,284', '4,348,562', '5,660,140', '6,801,763']
+['1,069,319', '2,836,385', '4,338,458', '5,648,819', '6,783,857']
 
 Duplication rates
-[94.71, 86.43, 79.79, 74.96, 71.18]
+[94.74, 86.51, 79.88, 75.0, 71.21]
 
-Things to check with Eran: are the high duplication rates okay?
+TOCHECK WITH ERAN: are the high duplication rates okay?
 
 ## Tokenizing the datasets
 
 We tokenize each word in the datasets into its own integer, which is the rank (breaking frequency ties alphabetically). We also create the train-test split for each dataset. This is done in `tokenize_tinystories.ipynb`.
+
+In the train-test split process, we randomly pulled out sentences into either train or test, so the story structure is further disrupted.
+
+Here are the number of tokens for each training dataset.
+['7,665,100', '20,251,971', '31,452,782', '41,800,752', '50,757,853']
+
+Number of test tokens
+['1,915,163', '5,050,981', '7,846,452', '10,442,299', '12,682,571']
+
+## Fitting the HMM
+
+Before traininig all HMM models, we will experiment with the smaller 100-word model. 100-word means that the model has a emission dimension of 100. We will experiment with hidden state dimensions of 100, 200, 400, 800, 1600. We will experiment with context windows 100, 200, 400, 800, 1600. The results will then be tabulated.
+
+This is done in `train_hmm_explore_100.ipynb`.
+
+TOCHECK WITH ERAN: is there value to track loss over time?
