@@ -29,4 +29,20 @@ The resulting file has one sentence on each line. Each sentence ends with the pe
 
 ## Subsetting the TinyStories dataset
 
-We rank each word in the processed dataset by frequency. We then plot how much sentences we have if we only allow ourselves to a certain number of words. For simplicity
+We rank each word in the processed dataset by frequency. We then plot how much sentences we have if we only allow ourselves to a certain number of words. We do this at `frequent_words.ipynb`.
+
+![](img/count-sentence-vs-words-used.png)
+
+We created datasets that use the top 100, 200, 300, 400, 500 words respectively.
+
+Number of sentences
+['1,071,376', '2,845,284', '4,348,562', '5,660,140', '6,801,763']
+
+Duplication rates
+[94.71, 86.43, 79.79, 74.96, 71.18]
+
+Things to check with Eran: are the high duplication rates okay?
+
+## Tokenizing the datasets
+
+We tokenize each word in the datasets into its own integer, which is the rank (breaking frequency ties alphabetically). We also create the train-test split for each dataset. This is done in `tokenize_tinystories.ipynb`.
