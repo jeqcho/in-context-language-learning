@@ -40,10 +40,14 @@ We created datasets that use the top 100, 200, 300, 400, 500 words respectively.
 Number of sentences
 ['1,069,319', '2,836,385', '4,338,458', '5,648,819', '6,783,857']
 
+Unique sentences
+['87,200', '517,265', '1,118,802', '1,758,064', '2,384,789']
+
 Duplication rates
 [94.74, 86.51, 79.88, 75.0, 71.21]
 
-TOCHECK WITH ERAN: are the high duplication rates okay?
+CHECK WITH ERAN: are the high duplication rates okay?
+ANS: Use unique sentences
 
 ## Tokenizing the datasets
 
@@ -51,16 +55,24 @@ We tokenize each word in the datasets into its own integer, which is the rank (b
 
 In the train-test split process, we randomly pulled out sentences into either train or test, so the story structure is further disrupted.
 
-Here are the number of tokens for each training dataset.
-['7,665,100', '20,251,971', '31,452,782', '41,800,752', '50,757,853']
+Number of training tokens (unique sentences)
+['689,997', '4,360,726', '9,625,369', '15,352,822', '20,938,503']
+
+Number of test tokens (unique sentences)
+['171,600', '1,089,234', '2,404,845', '3,837,880', '5,238,512']
+
+
+Number of training tokens
+['7,451,413', '20,608,430', '31,785,933', '42,779,104', '51,522,412']
 
 Number of test tokens
-['1,915,163', '5,050,981', '7,846,452', '10,442,299', '12,682,571']
+['2,128,850', '4,694,522', '7,513,301', '9,463,947', '11,918,012']
 
 ## Fitting the HMM
 
-Before traininig all HMM models, we will experiment with the smaller 100-word model. 100-word means that the model has a emission dimension of 100. We will experiment with hidden state dimensions of 100, 200, 400, 800, 1600. We will experiment with context windows 100, 200, 400, 800, 1600. The results will then be tabulated.
+Before traininig all HMM models, we will experiment with the smaller 100-word model. 100-word means that the model has an emission dimension of 100. We will experiment with hidden state dimensions of 100, 200, 400, 800, 1600. We will experiment with context windows 100, 200, 400, 800, 1600. The results will then be tabulated.
 
 This is done in `train_hmm_explore_100.ipynb`.
 
-TOCHECK WITH ERAN: is there value to track loss over time?
+CHECK WITH ERAN: is there value to track loss over time?
+ANS: try with smaller ones, if fast then no need track. Can also integrate with wandb.
