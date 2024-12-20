@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# This notebook trains a range of HMM with fixed 100 emission states (e) and 100 context length (L). We train for 200, 400, 800, 1600 hidden states (h).
+# This notebook trains a range of HMM with fixed 200 emission states (e) and 100 context length (L). We train for 100, 200, 400, 800, 1600 hidden states (h).
 # 
 # Input file:
 # 
-# `/n/netscratch/sham_lab/Everyone/jchooi/in-context-language-learning/data/TinyStories-100-train.txt`
-# `/n/netscratch/sham_lab/Everyone/jchooi/in-context-language-learning/data/TinyStories-100-test.txt`
+# `/n/netscratch/sham_lab/Everyone/jchooi/in-context-language-learning/data/TinyStories-200-train.txt`
+# `/n/netscratch/sham_lab/Everyone/jchooi/in-context-language-learning/data/TinyStories-200-test.txt`
 # 
 # and the tokenizer
 # 
@@ -101,9 +101,9 @@ def main():
     args = parser.parse_args()
     index = args.index
     
-    hs = [200, 400, 600, 800]
+    hs = [100, 200, 400, 600, 800]
 
-    combinations = [ModelParams(L=100, h=h, e=100) for h in hs]
+    combinations = [ModelParams(L=100, h=h, e=200) for h in hs]
 
 
     # In[16]:
