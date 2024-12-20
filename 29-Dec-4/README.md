@@ -96,8 +96,30 @@ Output noticed at 58m (output could have occured earlier)
 6 -14200245.55880919 +1067875.84404499
 
 
-It seems that the model goes through one iteration every 60 minutes.
+It seems that the model goes through one iteration every 60 minutes. The columns mean: iteration number, log-likelihood, and change in log-likelihood.
 
 Now, I will check the output from `train_hmm_explore_100.sh`, which is `hmm-L-100-h-100-e-100.pkl`, a model with 100 emission states, 100 hidden states and 100 context length.
 
 To analyze a HMM, I am thinking of looking at its stationary distribution, which is unique for an irreducible chain. I expect the hidden states to form an irreducible chain since the graph should be complete (there is a positive probability from any state to any state). Then I can look at each hidden state and get its emission probabilities too. I can first try to visualize the emission probability distribution for each of the top 10 hidden states by stationary distribution probability.
+
+I visualize this with `eval_hmm_100.ipynb`.
+
+TOTELL
+The HMM is a success, noting that there is a hidden state that correspond to names.
+
+![](tim-max-spot.png)
+
+Now we will let the HMM generate its own output.
+
+The HMM successfully outputs recognizable text
+```
+once upon a time , there was a little boy named tim . they was up tree wanted happy . one day , little . to the park . she loved it too .
+```
+
+TOTELL
+This uses train data that includes duplicates.
+
+We will now train a HMM with more hidden states. We do this at `train_hmm_vary_h_100.py`. We first set the `n_iter=1` to get the amount of time for one iteration, and we will then allocate sufficient time to do `n_iter=10`.
+
+TOTELL
+CPU-only. Is there any way to use GPU to speed up the EM algorithm?
