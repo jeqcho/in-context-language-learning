@@ -76,3 +76,28 @@ This is done in `train_hmm_explore_100.ipynb`.
 
 CHECK WITH ERAN: is there value to track loss over time?
 ANS: try with smaller ones, if fast then no need track. Can also integrate with wandb.
+
+Output noticed at 58m (output could have occured earlier)
+1 -34269810.72588260             +nan
+
+169m
+2 -26602153.78323489 +7667656.94264771
+
+176
+3 -20925675.45272173 +5676478.33051316
+
+245m
+4 -17038641.70104500 +3887033.75167673
+
+300m
+5 -15268121.40285418 +1770520.29819082
+
+359m
+6 -14200245.55880919 +1067875.84404499
+
+
+It seems that the model goes through one iteration every 60 minutes.
+
+Now, I will check the output from `train_hmm_explore_100.sh`, which is `hmm-L-100-h-100-e-100.pkl`, a model with 100 emission states, 100 hidden states and 100 context length.
+
+To analyze a HMM, I am thinking of looking at its stationary distribution, which is unique for an irreducible chain. I expect the hidden states to form an irreducible chain since the graph should be complete (there is a positive probability from any state to any state). Then I can look at each hidden state and get its emission probabilities too. I can first try to visualize the emission probability distribution for each of the top 10 hidden states by stationary distribution probability.
