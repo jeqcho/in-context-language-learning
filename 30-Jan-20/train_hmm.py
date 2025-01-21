@@ -5,15 +5,11 @@ from pomegranate.distributions import Categorical
 import numpy as np
 from dataclasses import dataclass
 import torch as t
-import json
+
+#%%
+device = t.device("cuda" if t.cuda.is_available() else "cpu")
 
 # %%
-# initialize the model
-
-sequence = "CGACTACTGACTACTCGCCGACGCGACTGCCGTCTATACTGCGCATACGGC"
-X = np.array([[[["A", "C", "G", "T"].index(char)] for char in sequence]])
-
-
 @dataclass
 class HMMArgs:
     num_emissions: int
@@ -25,13 +21,13 @@ def init_model(hmm_args: HMMArgs) -> DenseHMM:
     hidden_states: List[Any] = [None] * hmm_args.num_states
     for i in range(hmm_args.num_states):
         hidden_states[i] = Categorical(
-            t.full(size=(1, hmm_args.num_emissions), fill_value=1.0 / hmm_args.num_emissions)
+            t.full(size=(1, hmm_args.num_emissions), fill_value=1.0 / hmm_args.num_emissions).to(device)
         )
-    edges = t.full(size=(hmm_args.num_states, hmm_args.num_states), fill_value=1.0 / hmm_args.num_states)
-    starts = t.full(size=(hmm_args.num_states,), fill_value=1.0 / hmm_args.num_states)
-    ends = t.full(size=(hmm_args.num_states,), fill_value=1.0 / hmm_args.num_states)
+    edges = t.full(size=(hmm_args.num_states, hmm_args.num_states), fill_value=1.0 / hmm_args.num_states).to(device)
+    starts = t.full(size=(hmm_args.num_states,), fill_value=1.0 / hmm_args.num_states).to(device)
+    ends = t.full(size=(hmm_args.num_states,), fill_value=1.0 / hmm_args.num_states).to(device)
 
-    model = DenseHMM(hidden_states, edges=edges, starts=starts, ends=ends, verbose=True)
+    model = DenseHMM(hidden_states, edges=edges, starts=starts, ends=ends, verbose=True).to(device)
     return model
 
 
@@ -56,19 +52,16 @@ if __name__ == "__main__":
     # remove trailing sequence
     extra_length = len(train_integers) % hmm_args.seq_length
     train_integers = train_integers[:-extra_length]
-    train_array: np.ndarray = np.array(train_integers).reshape(-1, hmm_args.seq_length)
+    train_array = t.tensor(train_integers, device=device).reshape(-1, hmm_args.seq_length)
 
     # wrap each emission as 1d
-    train_array = np.expand_dims(train_array, -1)
+    train_array = t.unsqueeze(train_array, -1)
     
     # train_array.shape is (65930, 100, 1)
 
-    # test this out by getting a small set
-    # train_array = train_array[:4000]
-
     # init model
     model = init_model(hmm_args)
-
+    
     # train model
     model.fit(train_array)
 
@@ -76,3 +69,4 @@ if __name__ == "__main__":
     model_fname = f"/n/netscratch/sham_lab/Everyone/jchooi/in-context-language-learning/models/hmm-H-{hmm_args.num_states}-E-{hmm_args.num_emissions}-L-{hmm_args.seq_length}.json"
 
     t.save(model, model_fname)
+# %%

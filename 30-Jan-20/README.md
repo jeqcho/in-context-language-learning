@@ -28,3 +28,5 @@ We will fit the HMMs with the following parameters:
 This work is done at `train_hmm.py`.
 
 Testing on 1000 to 4000 rows, it seems like the model can train under 3 minutes. I will test this out.
+
+Kernel crashed when I ran the run for 65k rows. Could be memory issue.
