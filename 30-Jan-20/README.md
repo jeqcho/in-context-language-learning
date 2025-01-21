@@ -30,3 +30,69 @@ This work is done at `train_hmm.py`.
 Testing on 1000 to 4000 rows, it seems like the model can train under 3 minutes. I will test this out.
 
 Kernel crashed when I ran the run for 65k rows. Could be memory issue.
+
+Using GPU, extrapolation suggests 18.45 seconds.
+
+I ran into GPU issues. We can try to subset it so that it fits on a GPU, or a sbatch for 4 H100 GPUs which gives 320GB, which can fit our 243 GB.
+
+# Jan 21
+
+Let's try to sbatch it on 2 GPUs. I will keep testing until it breaks, and then try to submit that to 2 GPUs (which theoretically should run without errors).
+
+28.98 GiB is free.
+24.46 GiB is free.
+22.91 GiB is free
+
+65930 rows gives 243.15 GiB
+30000 rows gives 110.64 GiB
+10000 rows gives 36.88 GiB
+
+This gives roughly 270 rows per GB
+
+Let's try to fit 35 GB. This wouldn't pass 1 GPU, but should fit in 2 GPUs.
+270*35 = 9450 rows
+
+20 GB is 5400 rows
+
+First try on 1 GPU
+Tried to allocate 34.85 GiB. GPU 0 has a total capacity of 39.38 GiB of which 21.45 GiB is free.
+
+Second try on 1 GPU.
+Tried to allocate 34.85 GiB. GPU 0 has a total capacity of 39.38 GiB of which 2.54 GiB is free.
+
+Since we are testing H100s. We will test 1 GPU first with 9450 rows.
+Now we will sbatch using `test_1_gpu.sh`. This should pass because 35GB should fit.
+
+Surprisingly, it didn't pass.
+
+```
+Tried to allocate 34.85 GiB. GPU 0 has a total capacity of 79.10 GiB of which 6.90 GiB is free. Including non-PyTorch memory, this process has 72.18 GiB memory in use. Of the allocated memory 36.69 GiB is allocated by PyTorch, and 34.84 GiB is reserved by PyTorch but unallocated.
+```
+
+I suspect it has to do with the tensor slicing. I now modify it so I move the tensor to gpu after slicing.
+
+```
+torch.cuda.OutOfMemoryError: CUDA out of memory. Tried to allocate 34.85 GiB. GPU 0 has a total capacity of 79.10 GiB of which 6.93 GiB is free. Including non-PyTorch memory, this process has 72.15 GiB memory in use. Of the allocated memory 36.65 GiB is allocated by PyTorch, and 34.85 GiB is reserved by PyTorch but unallocated.
+```
+
+So moving to GPU after doesn't help.
+
+I am thinking if it could be that they have to make a copy during training, so in practice we need twice. Let's see if it works if I don't move it to gpu.
+
+Ok I need to specify the devices for both. Otherwise if not for both I get CPU which gives 2.7s instead of 0.5s.
+
+Ok let's see what's the threshold.
+
+3000 ok 36.1GB
+4000 not ok 14.62 GiB reserved
+6000 not ok
+
+Let's try submittting 4k to h100. This works. Let's make it 6k. 6k works. Check 8k. Doesn't work.
+```
+torch.cuda.OutOfMemoryError: CUDA out of memory. Tried to allocate 29.51 GiB. GPU 0 has a total capacity of 79.22 GiB of which 18.02 GiB is free. Including non-PyTorch memory, this process has 61.19 GiB memory in use. Of the allocated memory 31.03 GiB is allocated by PyTorch, and 29.50 GiB is reserved by PyTorch but unallocated.
+```
+Let's try 2 GPUs and if that works out of the box. Unfortunately, it doesn't work out of the box.
+
+Reading the docs again, I realized that the first dimension is batch size.
+
+I will now write a train_loader.
