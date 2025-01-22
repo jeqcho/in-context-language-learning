@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=test-1-gpu
 #SBATCH --account=kempner_sham_lab
-#SBATCH --partition=kempner_h100
+#SBATCH --partition=kempner
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=16

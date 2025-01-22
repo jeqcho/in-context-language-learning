@@ -25,11 +25,11 @@ def init_model(hmm_args: HMMArgs) -> DenseHMM:
     hidden_states: List[Any] = [None] * hmm_args.num_states
     for i in range(hmm_args.num_states):
         hidden_states[i] = Categorical(
-            t.full(size=(1, hmm_args.num_emissions), fill_value=1.0 / hmm_args.num_emissions)
+            t.full(size=(1, hmm_args.num_emissions), fill_value=1.0 / hmm_args.num_emissions).tolist()
         )
-    edges = t.full(size=(hmm_args.num_states, hmm_args.num_states), fill_value=1.0 / hmm_args.num_states)
-    starts = t.full(size=(hmm_args.num_states,), fill_value=1.0 / hmm_args.num_states)
-    ends = t.full(size=(hmm_args.num_states,), fill_value=1.0 / hmm_args.num_states)
+    edges = t.full(size=(hmm_args.num_states, hmm_args.num_states), fill_value=1.0 / hmm_args.num_states).tolist()
+    starts = t.full(size=(hmm_args.num_states,), fill_value=1.0 / hmm_args.num_states).tolist()
+    ends = t.full(size=(hmm_args.num_states,), fill_value=1.0 / hmm_args.num_states).tolist()
 
     model = DenseHMM(hidden_states, edges=edges, starts=starts, ends=ends, verbose=True)
     return model

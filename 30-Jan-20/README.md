@@ -100,3 +100,17 @@ I will now write a train_loader.
 # Jan 22
 
 The run yesterday ran out of time once it got into the nan phase. I will put a `max_iter`, and also look at the pull request on github.
+
+I pulled the pull request and install the local copy into pip. Let's test this out now.
+
+The bug still exists.
+
+Putting a `max_iter` won't solve the underlying problem. Let's check our initialization.
+
+We can see if the problem still arises with CPU, or we can check if just using plain lists helps.
+
+Submitted the CPU with sbatch. (doesn't help)
+
+Just using plain list for the init doesn't help.
+
+I asked o1 and it suggested using eps for the logs. I also added a code to warn loudly when its nan.
