@@ -1,13 +1,15 @@
 # %%
-from typing import Any, List
+from typing import Any, Iterable, List
 from pomegranate.hmm import DenseHMM
 from pomegranate.distributions import Categorical
 import numpy as np
 from dataclasses import dataclass
 import torch as t
+from tqdm import tqdm
 
-#%%
+# %%
 device = t.device("cuda" if t.cuda.is_available() else "cpu")
+
 
 # %%
 @dataclass
@@ -15,6 +17,8 @@ class HMMArgs:
     num_emissions: int
     num_states: int
     seq_length: int
+    batch_size: int
+    num_epoch: int
 
 
 def init_model(hmm_args: HMMArgs) -> DenseHMM:
@@ -30,13 +34,7 @@ def init_model(hmm_args: HMMArgs) -> DenseHMM:
     model = DenseHMM(hidden_states, edges=edges, starts=starts, ends=ends, verbose=True)
     return model
 
-
-# %%
-
-if __name__ == "__main__":
-    # init params
-    hmm_args = HMMArgs(num_emissions=100, num_states=100, seq_length=100)
-
+def get_train_loader(hmm_args: HMMArgs) -> Iterable:
     # get training data
     train_fname = f"/n/netscratch/sham_lab/Everyone/jchooi/in-context-language-learning/data/TinyStories-{hmm_args.num_emissions}-train.txt"
     test_fname = f"/n/netscratch/sham_lab/Everyone/jchooi/in-context-language-learning/data/TinyStories-{hmm_args.num_emissions}-test.txt"
@@ -48,7 +46,7 @@ if __name__ == "__main__":
     train_string = "".join(train_lines)
     train_string = train_string.replace("\n", "")
     train_integers = [int(token) for token in train_string.split(" ")]
-    
+
     # log GPU
     print(f"Allocated memory before: {t.cuda.memory_allocated() / 1e9} GB")
     print(f"Reserved memory before: {t.cuda.memory_reserved() / 1e9} GB")
@@ -60,25 +58,37 @@ if __name__ == "__main__":
 
     # wrap each emission as 1d
     train_array = t.unsqueeze(train_array, -1)
-    
-    # train_array.shape is (65930, 100, 1)
-    
-    # demo
-    train_array = train_array[:8000]
-    
-    # move tensor
-    train_array = train_array.to(device)
+
+    # return
+    idx = 0
+    while idx + hmm_args.batch_size < train_array.shape[0]:
+        yield train_array[idx : idx + hmm_args.batch_size, ...]
+        idx += hmm_args.batch_size
+
+
+# %%
+
+if __name__ == "__main__":
+    # init params
+    hmm_args = HMMArgs(num_emissions=100, num_states=100, seq_length=100, batch_size=512, num_epoch=10)
 
     # init model
     model = init_model(hmm_args).to(device)
-    
+
     # log GPU
     print(f"Allocated memory after init: {t.cuda.memory_allocated() / 1e9} GB")
     print(f"Reserved memory after init: {t.cuda.memory_reserved() / 1e9} GB")
-    
+
     # train model
-    model.fit(train_array)
-    
+    train_loader = get_train_loader(hmm_args)
+    for i in range(hmm_args.num_epoch):
+        pbar = tqdm(total=65000, desc=f"Epoch {i+1}")
+        for batch in train_loader:
+            batch = batch.to(device)
+            model.fit(batch)
+            pbar.update(batch.shape[0])
+        pbar.close()
+
     print(f"Allocated memory after train: {t.cuda.memory_allocated() / 1e9} GB")
     print(f"Reserved memory after train: {t.cuda.memory_reserved() / 1e9} GB")
 

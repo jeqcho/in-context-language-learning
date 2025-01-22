@@ -96,3 +96,7 @@ Let's try 2 GPUs and if that works out of the box. Unfortunately, it doesn't wor
 Reading the docs again, I realized that the first dimension is batch size.
 
 I will now write a train_loader.
+
+# Jan 22
+
+The run yesterday ran out of time once it got into the nan phase. I will put a `max_iter`, and also look at the pull request on github.
