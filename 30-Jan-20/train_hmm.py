@@ -58,6 +58,8 @@ def get_train_loader(hmm_args: HMMArgs) -> Iterable:
 
     # wrap each emission as 1d
     train_array = t.unsqueeze(train_array, -1)
+    
+    # TODO shuffle
 
     # return
     idx = 0
@@ -93,7 +95,7 @@ if __name__ == "__main__":
     print(f"Reserved memory after train: {t.cuda.memory_reserved() / 1e9} GB")
 
     # save model
-    model_fname = f"/n/netscratch/sham_lab/Everyone/jchooi/in-context-language-learning/models/hmm-H-{hmm_args.num_states}-E-{hmm_args.num_emissions}-L-{hmm_args.seq_length}.json"
+    model_fname = f"/n/netscratch/sham_lab/Everyone/jchooi/in-context-language-learning/models/hmm-H-{hmm_args.num_states}-E-{hmm_args.num_emissions}-L-{hmm_args.seq_length}.pkl"
 
     t.save(model, model_fname)
 # %%

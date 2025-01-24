@@ -60,3 +60,5 @@ core
 # log files
 *.out
 *.err
+
+/pomegranate/*

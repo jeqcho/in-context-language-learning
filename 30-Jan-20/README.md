@@ -114,3 +114,11 @@ Submitted the CPU with sbatch. (doesn't help)
 Just using plain list for the init doesn't help.
 
 I asked o1 and it suggested using eps for the logs. I also added a code to warn loudly when its nan.
+
+# Jan 23
+
+Traced the error to `[WARNING] Infs found in emissions _check_inputs _base 3`. The code in question is `emissions = model._emission_matrix(X, priors=priors)` in `_base.py` under `_check_inputs`.
+
+Solved the bug.
+
+Next steps: add shuffling, look at this [link](https://pomegranate.readthedocs.io/en/latest/tutorials/C_Feature_Tutorial_3_Out_Of_Core_Learning.html) for batch training, and also sanity check predictions (from the output model).
