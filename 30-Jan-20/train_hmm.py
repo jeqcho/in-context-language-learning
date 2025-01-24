@@ -1,24 +1,27 @@
+"""
+This script trains a Hidden Markov Model (HMM) using the pomegranate library.
+
+Output File:
+The trained HMM is saved at:
+"/n/netscratch/sham_lab/Everyone/jchooi/in-context-language-learning/models/hmm-H-{hmm_args.num_states}-E-{hmm_args.num_emissions}-L-{hmm_args.seq_length}.pkl"
+
+- H: Number of states in the HMM
+- E: Number of emissions in the HMM
+- L: Length of the sequences used for training
+
+"""
 # %%
 from typing import Any, Iterable, List
 from pomegranate.hmm import DenseHMM
 from pomegranate.distributions import Categorical
-import numpy as np
-from dataclasses import dataclass
+from utils import HMMArgs
 import torch as t
+from torch.utils.data import TensorDataset, DataLoader
 from tqdm import tqdm
 
 # %%
 device = t.device("cuda" if t.cuda.is_available() else "cpu")
-
-
 # %%
-@dataclass
-class HMMArgs:
-    num_emissions: int
-    num_states: int
-    seq_length: int
-    batch_size: int
-    num_epoch: int
 
 
 def init_model(hmm_args: HMMArgs) -> DenseHMM:
@@ -59,15 +62,8 @@ def get_train_loader(hmm_args: HMMArgs) -> Iterable:
     # wrap each emission as 1d
     train_array = t.unsqueeze(train_array, -1)
     
-    # TODO shuffle
-
-    # return
-    idx = 0
-    while idx + hmm_args.batch_size < train_array.shape[0]:
-        yield train_array[idx : idx + hmm_args.batch_size, ...]
-        idx += hmm_args.batch_size
-
-
+    train_dataset = TensorDataset(train_array, t.empty_like(train_array)) # labels are dummy tensors
+    return DataLoader(train_dataset, batch_size=hmm_args.batch_size, shuffle=True)
 # %%
 
 if __name__ == "__main__":
@@ -85,7 +81,7 @@ if __name__ == "__main__":
     train_loader = get_train_loader(hmm_args)
     for i in range(hmm_args.num_epoch):
         pbar = tqdm(total=65000, desc=f"Epoch {i+1}")
-        for batch in train_loader:
+        for batch, _ in train_loader:
             batch = batch.to(device)
             model.fit(batch)
             pbar.update(batch.shape[0])

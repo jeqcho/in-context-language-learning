@@ -122,3 +122,9 @@ Traced the error to `[WARNING] Infs found in emissions _check_inputs _base 3`. T
 Solved the bug.
 
 Next steps: add shuffling, look at this [link](https://pomegranate.readthedocs.io/en/latest/tutorials/C_Feature_Tutorial_3_Out_Of_Core_Learning.html) for batch training, and also sanity check predictions (from the output model).
+
+# Jan 24
+
+Use torch's `TensorDataset` and `DataLoader`. Writing evals at `sanity_check_hmm.ipynb`.
+
+There's a possible bug as the training loop freezes at 94% on epoch 2.
