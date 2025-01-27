@@ -125,6 +125,18 @@ Next steps: add shuffling, look at this [link](https://pomegranate.readthedocs.i
 
 # Jan 24
 
-Use torch's `TensorDataset` and `DataLoader`. Writing evals at `sanity_check_hmm.ipynb`.
+Use torch's `TensorDataset` and `DataLoader`. Writing evals at `sanity_check_hmm.py`.
 
 There's a possible bug as the training loop freezes at 94% on epoch 2.
+
+# Jan 25
+
+Let's try to do 5 epochs using batched training. Works! Sent a sbatch for 10 epochs on a h100. In the meantime, let's sanity check.
+
+I will write some helper functions in `utils.py` to help with tokenizing and detokenizing.
+
+Note that from previous work, the tokenizer is stored at `/n/netscratch/sham_lab/Everyone/jchooi/in-context-language-learning/data/tokenizer.json`.
+
+# Jan 26
+
+Sbatch for 10 epochs work. Now focus on sanity checking.

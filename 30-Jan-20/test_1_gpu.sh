@@ -1,12 +1,12 @@
 #!/bin/bash
 #SBATCH --job-name=test-1-gpu
 #SBATCH --account=kempner_sham_lab
-#SBATCH --partition=kempner
+#SBATCH --partition=kempner_h100
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=16
 #SBATCH --gres=gpu:1
-#SBATCH --time=0-02:00
+#SBATCH --time=0-00:30
 #SBATCH --mem=250G
 #SBATCH --output=logs/test-1-gpu-%A-%a.out
 #SBATCH --error=logs/test-1-gpu-%A-%a.err
