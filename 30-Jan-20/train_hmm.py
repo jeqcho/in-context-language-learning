@@ -18,6 +18,7 @@ from utils import HMMArgs
 import torch as t
 from torch.utils.data import TensorDataset, DataLoader
 from tqdm import tqdm
+import numpy as np
 
 # %%
 device = t.device("cuda" if t.cuda.is_available() else "cpu")
@@ -26,9 +27,12 @@ device = t.device("cuda" if t.cuda.is_available() else "cpu")
 
 def init_model(hmm_args: HMMArgs) -> DenseHMM:
     hidden_states: List[Any] = [None] * hmm_args.num_states
+    rng = np.random.default_rng(42)
     for i in range(hmm_args.num_states):
+        dist = rng.uniform(low=0,high=1,size=(1, hmm_args.num_emissions))
+        dist = dist / dist.sum()
         hidden_states[i] = Categorical(
-            t.full(size=(1, hmm_args.num_emissions), fill_value=1.0 / hmm_args.num_emissions).tolist()
+            t.tensor(dist).tolist()
         )
     edges = t.full(size=(hmm_args.num_states, hmm_args.num_states), fill_value=1.0 / hmm_args.num_states).tolist()
     starts = t.full(size=(hmm_args.num_states,), fill_value=1.0 / hmm_args.num_states).tolist()
@@ -68,7 +72,8 @@ def get_train_loader(hmm_args: HMMArgs) -> Iterable:
 
 if __name__ == "__main__":
     # init params
-    hmm_args = HMMArgs(num_emissions=100, num_states=100, seq_length=100, batch_size=2048, num_epoch=10)
+    hmm_args = HMMArgs(num_emissions=100, num_states=400, seq_length=600, batch_size=64, num_epoch=10)
+    print(hmm_args)
 
     # init model
     model = init_model(hmm_args).to(device)
@@ -82,6 +87,7 @@ if __name__ == "__main__":
         pbar = tqdm(total=65000, desc=f"Epoch {i+1}")
         for batch, _ in train_loader:
             batch = batch.to(device)
+            # model.fit(batch)
             model.summarize(batch)
             pbar.update(batch.shape[0])
         model.from_summaries()

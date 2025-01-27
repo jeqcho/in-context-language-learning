@@ -140,3 +140,36 @@ Note that from previous work, the tokenizer is stored at `/n/netscratch/sham_lab
 # Jan 26
 
 Sbatch for 10 epochs work. Now focus on sanity checking.
+
+It seems like the hidden probabilities are all the same. i.e. there has been no training.
+
+Sum of probabilities of emissions for each word. Note that they don't sum to one and have a monotonically decreasing pattern.
+```
+tensor([8.3801e+00, 2.9094e+00, 1.0502e+00, 3.6931e+00, 5.7183e-01, 5.5644e-01,
+        9.6844e-01, 1.0000e-06], device='cuda:0')
+```
+
+Let's check if using `fit` instead of `summaries` will work better.
+
+It shows the exact thing.
+
+Checking the output prediction for each epoch shows that it is indeed just outputting 0 as the emission.
+
+Let's see if random init helps.
+
+Great! Looks like the tokens are different at the very end of the context.
+
+Tried training this on h100 but failed
+```
+hmm_args = HMMArgs(num_emissions=100, num_states=200, seq_length=300, batch_size=1024, num_epoch=5)
+```
+
+will use 512 now.
+
+This throws error
+```
+hmm_args = HMMArgs(num_emissions=100, num_states=400, seq_length=300, batch_size=512, num_epoch=10)
+```
+but 256 should be fine. Still failed, trying 128.
+
+Next steps. Check if random init the edges help too.
