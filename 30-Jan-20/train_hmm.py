@@ -11,7 +11,7 @@ The trained HMM is saved at:
 
 """
 # %%
-from typing import Any, Iterable, List
+from typing import Any, Iterable, List, Tuple
 from pomegranate.hmm import DenseHMM
 from pomegranate.distributions import Categorical
 from utils import HMMArgs
@@ -41,7 +41,7 @@ def init_model(hmm_args: HMMArgs) -> DenseHMM:
     model = DenseHMM(hidden_states, edges=edges, starts=starts, ends=ends, verbose=True)
     return model
 
-def get_train_loader(hmm_args: HMMArgs) -> Iterable:
+def get_train_loader(hmm_args: HMMArgs) -> Tuple[Iterable, int]:
     # get training data
     train_fname = f"/n/netscratch/sham_lab/Everyone/jchooi/in-context-language-learning/data/TinyStories-{hmm_args.num_emissions}-train.txt"
     test_fname = f"/n/netscratch/sham_lab/Everyone/jchooi/in-context-language-learning/data/TinyStories-{hmm_args.num_emissions}-test.txt"
@@ -67,12 +67,13 @@ def get_train_loader(hmm_args: HMMArgs) -> Iterable:
     train_array = t.unsqueeze(train_array, -1)
     
     train_dataset = TensorDataset(train_array, t.empty_like(train_array)) # labels are dummy tensors
-    return DataLoader(train_dataset, batch_size=hmm_args.batch_size, shuffle=True)
+    return DataLoader(train_dataset, batch_size=hmm_args.batch_size, shuffle=True), len(train_dataset)
 # %%
 
 if __name__ == "__main__":
     # init params
-    hmm_args = HMMArgs(num_emissions=100, num_states=400, seq_length=600, batch_size=64, num_epoch=10)
+    hmm_args = HMMArgs(num_emissions=100, num_states=400, seq_length=300, batch_size=128, num_epoch=10)
+    save_flag = True
     print(hmm_args)
 
     # init model
@@ -82,9 +83,9 @@ if __name__ == "__main__":
     print(f"Reserved memory after init: {t.cuda.memory_reserved() / 1e9} GB")
 
     # train model
-    train_loader = get_train_loader(hmm_args)
+    train_loader, total_len = get_train_loader(hmm_args)
     for i in range(hmm_args.num_epoch):
-        pbar = tqdm(total=65000, desc=f"Epoch {i+1}")
+        pbar = tqdm(total=total_len, desc=f"Epoch {i+1}")
         for batch, _ in train_loader:
             batch = batch.to(device)
             # model.fit(batch)
@@ -96,7 +97,6 @@ if __name__ == "__main__":
         pbar.close()
 
     # save model
-    model_fname = f"/n/netscratch/sham_lab/Everyone/jchooi/in-context-language-learning/models/hmm-H-{hmm_args.num_states}-E-{hmm_args.num_emissions}-L-{hmm_args.seq_length}.pkl"
-
-    t.save(model, model_fname)
+    if save_flag:
+        t.save(model, hmm_args.model_filename)
 # %%

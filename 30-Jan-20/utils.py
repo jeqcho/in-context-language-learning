@@ -2,7 +2,7 @@
 Helper classes for HMMs
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import json
 import torch
 from jaxtyping import Int, Float
@@ -17,7 +17,11 @@ class HMMArgs:
     seq_length: int
     batch_size: int
     num_epoch: int
-
+    model_filename: str = field(init=False)
+    
+    def __post_init__(self):
+        self.model_filename = f"/n/netscratch/sham_lab/Everyone/jchooi/in-context-language-learning/models/hmm-H-{self.num_states}-E-{self.num_emissions}-L-{self.seq_length}-epoch-{self.num_epoch}.pkl"
+    
 
 class Tokenizer:
     def __init__(self, tokenizer_filename) -> None:
@@ -62,7 +66,31 @@ class Tokenizer:
 class HMMWrapper:
     def __init__(self, model: DenseHMM) -> None:
         self.model = model
-    
+
     # TODO
-    def get_logits(self, tokenized_sentence: Int[torch.Tensor, "seq_len"]) -> Float[torch.Tensor, "seq_len vocab_size"]:
+    def get_logits(
+        self, tokenized_sentence: Int[torch.Tensor, "seq_len"]
+    ) -> Float[torch.Tensor, "seq_len vocab_size"]:
         pass
+
+
+def compare_word_lists(word_list_1: List[str], word_list_2: List[str]) -> None:
+    """
+    Print out a nice comparison of the two word lists
+    """
+    assert len(word_list_1) == len(word_list_2)
+    print(f"{'Sentence 1':<20} {'Sentence 2':<20}")
+    print("=" * 40)
+    for i in range(len(word_list_1)):
+        word1 = word_list_1[i] if i < len(word_list_1) else ""
+        word2 = word_list_2[i] if i < len(word_list_2) else ""
+        print(f"{word1:<20} {word2:<20}")
+
+
+def compare_sentences(sentence_1: str, sentence_2: str) -> None:
+    """
+    Print out a nice comparison of the two sentences
+    """
+    word_list_1 = sentence_1.split(" ")
+    word_list_2 = sentence_2.split(" ")
+    return compare_word_lists(word_list_1, word_list_2)

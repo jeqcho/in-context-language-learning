@@ -173,3 +173,71 @@ hmm_args = HMMArgs(num_emissions=100, num_states=400, seq_length=300, batch_size
 but 256 should be fine. Still failed, trying 128.
 
 Next steps. Check if random init the edges help too.
+
+# Jan 27
+
+754644 took 36 minutes while 755199 took 60 minutes.
+
+For 755199
+```
+HMMArgs(num_emissions=100, num_states=400, seq_length=600, batch_size=64, num_epoch=10)
+```
+
+Let's try to debug the pbar first.
+
+Should be ok. Added epoch to the file name.
+
+Submitted two training runs.
+
+I think `self.k` in the `pomegranate` library refers to the number of emissions. Hmm, I take that back. There's this line.
+
+```
+@property
+def k(self):
+        return len(self.distributions) if self.distributions is not None else 0
+
+@property
+def n_distributions(self):
+        return len(self.distributions) if self.distributions is not None else 0
+```
+
+I think it will be more clear if we have diff dimensions. I will submit a quick run.
+
+The periods are always correct.
+
+But if we look at the definition of `self.k`, it seems like the returned shape to be `"batch seq_len n_hidden"` instead of `"batch seq_len n_emissions"`.
+
+For
+```
+HMMArgs(num_emissions=100, num_states=200, seq_length=300, batch_size=256, num_epoch=1)
+```
+the commas and periods are accurately predicted. Note the single epoch.
+
+Sbatch runs for
+882840
+```
+HMMArgs(num_emissions=100, num_states=200, seq_length=600, batch_size=256, num_epoch=10)
+```
+
+882789
+```
+HMMArgs(num_emissions=100, num_states=200, seq_length=300, batch_size=256, num_epoch=10)
+```
+
+883266
+```
+HMMArgs(num_emissions=100, num_states=400, seq_length=300, batch_size=128, num_epoch=10)
+```
+
+It turns out that the returned shape is indeed `"batch seq_len n_hidden"`.
+
+Then, what's the difference between `_emission_matrix` and `predict_log_proba`? I think the main difference is that `predict_log_proba` takes into account the entire sequence, while `_emission_matrix` doesn't.
+
+We can still grab the "real" emission matrix by doing `model.distributions[i].prob`.
+
+Why is `model.distributions[state].probs[0]` having size `(1, 100)`? Shouldn't it be `(100,1)`, since we have this from `Categorical`
+```
+probs: list, numpy.ndarray, torch.tensor or None, shape=(k, d), optional
+        Probabilities for each key for each feature, where k is the largest
+        number of keys across all features. Default is None
+```
