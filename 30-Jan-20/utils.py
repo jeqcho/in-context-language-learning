@@ -66,12 +66,39 @@ class Tokenizer:
 class HMMWrapper:
     def __init__(self, model: DenseHMM) -> None:
         self.model = model
+        self.num_hidden = len(model.distributions)
+        self.num_emissions = model.distributions[0].probs.shape[1]
 
     # TODO
     def get_logits(
         self, tokenized_sentence: Int[torch.Tensor, "seq_len"]
     ) -> Float[torch.Tensor, "seq_len vocab_size"]:
         pass
+    
+    # get the emission distribution for each predicted hidden state
+    def get_distributions_for_seq(self, seq):
+        return [self.model.distributions[state].probs[0].tolist() for state in seq]
+    
+    def get_best_state_for_emission(self, emissions: Int[torch.Tensor, "batch seq_len"])->Int[torch.Tensor, "batch seq_len"]:
+        """
+        Returns the best hidden state for each emission state. Best here means the hidden state with the highest probability for that emission state across all other hidden states. Note that the emission state does not need to have the highest probability for that hidden state.
+        """
+        best_state_of = [None] * self.num_emissions
+        for emission in range(self.num_emissions):
+            mx = 0
+            best_state = None
+            for state in range(self.num_hidden):
+                prob = self.model.distributions[state].probs[0][emission]
+                if prob > mx:
+                    mx = prob
+                    best_state = state
+            assert best_state is not None
+            best_state_of[emission] = best_state
+        if emissions is None:
+            return torch.tensor(best_state_of)
+        return emissions.apply_(lambda emission: best_state_of[emission])        
+        
+        
 
 
 def compare_word_lists(word_list_1: List[str], word_list_2: List[str]) -> None:
@@ -94,3 +121,7 @@ def compare_sentences(sentence_1: str, sentence_2: str) -> None:
     word_list_1 = sentence_1.split(" ")
     word_list_2 = sentence_2.split(" ")
     return compare_word_lists(word_list_1, word_list_2)
+
+
+def compare_tensors(tensorA, tensorB):
+    return torch.mean(tensorA == tensorB, dtype=torch.int)

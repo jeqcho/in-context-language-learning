@@ -38,7 +38,7 @@ def init_model(hmm_args: HMMArgs) -> DenseHMM:
     starts = t.full(size=(hmm_args.num_states,), fill_value=1.0 / hmm_args.num_states).tolist()
     ends = t.full(size=(hmm_args.num_states,), fill_value=1.0 / hmm_args.num_states).tolist()
 
-    model = DenseHMM(hidden_states, edges=edges, starts=starts, ends=ends, verbose=True)
+    model = DenseHMM(hidden_states, edges=edges, starts=starts, ends=ends, verbose=False)
     return model
 
 def get_train_loader(hmm_args: HMMArgs) -> Tuple[Iterable, int]:
@@ -50,8 +50,8 @@ def get_train_loader(hmm_args: HMMArgs) -> Tuple[Iterable, int]:
         train_lines = f.readlines()
 
     # concat into a big string and split into seq_length
-    train_string = "".join(train_lines)
-    train_string = train_string.replace("\n", "")
+    train_lines = [line.strip() for line in train_lines]
+    train_string = " ".join(train_lines)
     train_integers = [int(token) for token in train_string.split(" ")]
 
     # log GPU
@@ -72,8 +72,8 @@ def get_train_loader(hmm_args: HMMArgs) -> Tuple[Iterable, int]:
 
 if __name__ == "__main__":
     # init params
-    hmm_args = HMMArgs(num_emissions=100, num_states=400, seq_length=300, batch_size=128, num_epoch=10)
-    save_flag = True
+    hmm_args = HMMArgs(num_emissions=100, num_states=100, seq_length=100, batch_size=1024, num_epoch=1)
+    save_flag = False
     print(hmm_args)
 
     # init model
@@ -86,17 +86,23 @@ if __name__ == "__main__":
     train_loader, total_len = get_train_loader(hmm_args)
     for i in range(hmm_args.num_epoch):
         pbar = tqdm(total=total_len, desc=f"Epoch {i+1}")
+        print(f"{model.distributions[0].probs[0][0]=}")
+        assert model.distributions[0].probs[0][0] > 0, "Non-positive probability for first emission"
         for batch, _ in train_loader:
             batch = batch.to(device)
             # model.fit(batch)
             model.summarize(batch)
+            model.from_summaries()
+            p = 1
+            assert model.distributions[0].probs[0][0] > 0, "Non-positive probability for first emission"            
             pbar.update(batch.shape[0])
-        model.from_summaries()
+        # model.from_summaries()
         print(f"Allocated memory after this epoch: {t.cuda.memory_allocated() / 1e9} GB")
         print(f"Reserved memory after this epoch: {t.cuda.memory_reserved() / 1e9} GB")
         pbar.close()
 
     # save model
     if save_flag:
+        # t.save(model, hmm_args.model_filename[:-4]+"fit.pkl")
         t.save(model, hmm_args.model_filename)
 # %%

@@ -241,3 +241,58 @@ probs: list, numpy.ndarray, torch.tensor or None, shape=(k, d), optional
         Probabilities for each key for each feature, where k is the largest
         number of keys across all features. Default is None
 ```
+
+todo-done: answer the above.
+
+Also, check out if the HMM is learning the uniform, unigram, bigram strat.
+
+# Jan 28
+
+Checking the shapes, and see if our init is correct.
+
+This is fine, since
+```
+probs: list, numpy.ndarray, torch.tensor or None, shape=(k, d), optional
+Probabilities for each key for each feature, where k is the largest number of keys across all features. Default is None
+
+n_categories: list, numpy.ndarray, torch.tensor or None, optional
+The number of categories for each feature in the data. Only needs to be provided when the parameters will be learned directly from data and you want to make sure that right number of keys are included in each dimension. Default is None.
+```
+
+Since each `Categorical` represents a feature, the number of feature is 1, so the shape is indeed `(1, 100)`.
+
+We can create a 2D heatmap to visualize how n_hidden and seq_length helps with test cross-entropy of the last token.
+
+Sanity check our understanding of `_emission_matrix` as prior. So it should correspond to a hidden state that has the highest emission probability for this emission.
+
+Somehow, the emission probability for the first (index 0) emission is zero across all hidden states (which is the period .). Let me check initialization. Init looks fine. Let's check another model. Other model looks fine.
+
+Idea: see how the "name hidden state" evolve over num_hidden, seq_len and epochs.
+
+Training a small model, the zero probability occured immediately after the first epoch. Let's see if this happens with `fit`.
+
+Also check if using `fit` does different things.
+
+# Jan 29
+
+Two tasks
+1. Check the index 0 emission having zero probability bug
+2. Check if `fit` gives similar performance. (I think we can discard this for now).
+
+On `fit`, the run at 1054056 uses `fit` with params `HMMArgs(num_emissions=100, num_states=200, seq_length=300, batch_size=256, num_epoch=10)`, but it didn't manage to train even one epoch within 2 hours. Final estimation is around 5 hours. I think `fit` and `from_summaries` do the same thing, and `from_summaries` is faster.
+
+Let's continue to solve the index 0 zero probability emission bug. Let's try with `fit`.
+
+`fit` is taking a long time to converge for a single batch. I am wondering if it caused by the `EPS` I set, since back then the steps move pretty quickly. Let me test this out by setting `EPS` to 0. It got `nan` pretty quickly. I will just put a lower `EPS`. I set it to `EPS = 1e-14` since `sys.float_info.epsilon` is usually `2e-16`.
+
+Would calling `summarize` and `from_summaries` both in one step work? Well, it's instant, as compared to `fit`. Is it because of `verbose`? Doesn't seem like it. Ran for a minute and it still couldn't get past it.
+
+The one step `from_summaries` immediately threw an error for non-positive probability for first emission.
+
+Let's check what happens in `summarize` and `from_summaries`.
+
+Tracing...
+
+The first element of `_xw_sum` is zero in `Categorical`.
+
+Ok. It could be our fault. There's no 0 in the `batch`.
