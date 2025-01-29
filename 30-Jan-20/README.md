@@ -295,4 +295,5 @@ Tracing...
 
 The first element of `_xw_sum` is zero in `Categorical`.
 
-Ok. It could be our fault. There's no 0 in the `batch`.
+Ok. It could be our fault. There's no 0 in the `batch`. Solved the problem. Now let's remove all previously trained models.
+

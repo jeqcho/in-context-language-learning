@@ -72,7 +72,7 @@ def get_train_loader(hmm_args: HMMArgs) -> Tuple[Iterable, int]:
 
 if __name__ == "__main__":
     # init params
-    hmm_args = HMMArgs(num_emissions=100, num_states=100, seq_length=100, batch_size=1024, num_epoch=1)
+    hmm_args = HMMArgs(num_emissions=100, num_states=400, seq_length=300, batch_size=128, num_epoch=10)
     save_flag = False
     print(hmm_args)
 
@@ -87,16 +87,12 @@ if __name__ == "__main__":
     for i in range(hmm_args.num_epoch):
         pbar = tqdm(total=total_len, desc=f"Epoch {i+1}")
         print(f"{model.distributions[0].probs[0][0]=}")
-        assert model.distributions[0].probs[0][0] > 0, "Non-positive probability for first emission"
         for batch, _ in train_loader:
             batch = batch.to(device)
             # model.fit(batch)
             model.summarize(batch)
-            model.from_summaries()
-            p = 1
-            assert model.distributions[0].probs[0][0] > 0, "Non-positive probability for first emission"            
             pbar.update(batch.shape[0])
-        # model.from_summaries()
+        model.from_summaries()
         print(f"Allocated memory after this epoch: {t.cuda.memory_allocated() / 1e9} GB")
         print(f"Reserved memory after this epoch: {t.cuda.memory_reserved() / 1e9} GB")
         pbar.close()
