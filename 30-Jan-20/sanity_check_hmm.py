@@ -14,7 +14,7 @@ from jaxtyping import Float
 # %%
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-hmm_args = HMMArgs(num_emissions=100, num_states=200, seq_length=300, batch_size=256, num_epoch=10)
+hmm_args = HMMArgs(num_emissions=100, num_states=100, seq_length=100, batch_size=256, num_epoch=1)
 
 # load model
 print(f"Loading model from {hmm_args.model_filename}")
