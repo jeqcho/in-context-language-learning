@@ -72,7 +72,7 @@ def get_train_loader(hmm_args: HMMArgs) -> Tuple[Iterable, int]:
 
 if __name__ == "__main__":
     # init params
-    hmm_args = HMMArgs(num_emissions=100, num_states=100, seq_length=100, batch_size=1024, num_epoch=10)
+    hmm_args = HMMArgs(num_emissions=100, num_states=200, seq_length=300, batch_size=256, num_epoch=40)
     save_flag = True
     print(hmm_args)
 

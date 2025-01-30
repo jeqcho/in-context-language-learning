@@ -297,3 +297,20 @@ The first element of `_xw_sum` is zero in `Categorical`.
 
 Ok. It could be our fault. There's no 0 in the `batch`. Solved the problem. Now let's remove all previously trained models.
 
+I don't have GCM or GitHub CLI, but somehow I can still push without entering my password. I need to look into this. TODO.
+
+Took roughly 7 minutes to train `HMMArgs(num_emissions=100, num_states=100, seq_length=100, batch_size=1024, num_epoch=10)`.
+
+Look's like the model is employing unigram strategy and is outputting the most common words like `.`, `once`, `upon`, `a`, `time`, etc.
+
+I will train a bunch of models for our use later.
+
+- `HMMArgs(num_emissions=100, num_states=200, seq_length=300, batch_size=256, num_epoch=10)` params ok, submitted
+- `HMMArgs(num_emissions=100, num_states=200, seq_length=600, batch_size=256, num_epoch=10)` params ok, submitted
+- `HMMArgs(num_emissions=100, num_states=400, seq_length=300, batch_size=128, num_epoch=10)` params ok, submitted
+- `HMMArgs(num_emissions=100, num_states=200, seq_length=300, batch_size=256, num_epoch=20)` params ok,
+- `HMMArgs(num_emissions=100, num_states=200, seq_length=300, batch_size=256, num_epoch=40)` params ok,
+
+I should also keep track of the total time it takes to run each of them.
+
+I also need to make it so that the command args are fed from the `.sh` so we don't have to wait for the job to run to get another one up running.

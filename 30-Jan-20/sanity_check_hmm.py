@@ -14,7 +14,7 @@ from jaxtyping import Float
 # %%
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-hmm_args = HMMArgs(num_emissions=100, num_states=100, seq_length=100, batch_size=256, num_epoch=1)
+hmm_args = HMMArgs(num_emissions=100, num_states=100, seq_length=100, batch_size=256, num_epoch=10)
 
 # load model
 print(f"Loading model from {hmm_args.model_filename}")
@@ -63,12 +63,12 @@ prediction_log_probs: Float[torch.Tensor, "batch seq_len n_hidden"] = model.pred
 #%%
 # get the probabilities if we don't look at the whole sequence
 # get the argmax
-predicted_states_no_peek = emission_log_probs.argmax(-1).cpu()
+# predicted_states_no_peek = emission_log_probs.argmax(-1).cpu()
 
-# get the expected predicted state
-expected_predicted_states = hmm_wrapper.get_best_state_for_emission(tokenized_sentences)
+# # get the expected predicted state
+# expected_predicted_states = hmm_wrapper.get_best_state_for_emission(tokenized_sentences)
 
-print(compare_tensors(predicted_states_no_peek, expected_predicted_states))
+# print(compare_tensors(predicted_states_no_peek, expected_predicted_states))
 
 #%%
 # get the predicted hidden states using all of the sequence
@@ -88,3 +88,4 @@ predicted_emissions = predicted_emission_distributions.argmax(-1)
 predicted_emissions_str = tokenizer.detokenize_batch(predicted_emissions)
 for idx, sentence in enumerate(predicted_emissions_str):
     compare_sentences(seqs[idx], sentence)
+#%%
