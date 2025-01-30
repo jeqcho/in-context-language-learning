@@ -6,7 +6,7 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=16
 #SBATCH --gres=gpu:1
-#SBATCH --time=0-02:00
+#SBATCH --time=0-00:10
 #SBATCH --mem=250G
 #SBATCH --output=logs/test-1-gpu-%A-%a.out
 #SBATCH --error=logs/test-1-gpu-%A-%a.err
@@ -21,4 +21,4 @@ mamba activate olmo2
 
 PORT=25867
 
-torchrun --master_port=$PORT --nproc_per_node=1 ./train_hmm.py
+torchrun --master_port=$PORT --nproc_per_node=1 ./train_hmm.py --num_emissions=100 --num_states=100 --seq_length=100 --batch_size=1024 --num_epoch=2

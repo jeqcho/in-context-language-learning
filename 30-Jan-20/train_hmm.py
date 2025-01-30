@@ -19,6 +19,7 @@ import torch as t
 from torch.utils.data import TensorDataset, DataLoader
 from tqdm import tqdm
 import numpy as np
+import argparse
 
 # %%
 device = t.device("cuda" if t.cuda.is_available() else "cpu")
@@ -71,8 +72,17 @@ def get_train_loader(hmm_args: HMMArgs) -> Tuple[Iterable, int]:
 # %%
 
 if __name__ == "__main__":
+    # receive args from commmand
+    parser = argparse.ArgumentParser(description="Train a Hidden Markov Model (HMM) using the pomegranate library.")
+    parser.add_argument("--num_emissions", type=int, required=True, help="Number of emissions in the HMM")
+    parser.add_argument("--num_states", type=int, required=True, help="Number of states in the HMM")
+    parser.add_argument("--seq_length", type=int, required=True, help="Length of the sequences used for training")
+    parser.add_argument("--batch_size", type=int, required=True, help="Batch size for training")
+    parser.add_argument("--num_epoch", type=int, required=True, help="Number of epochs for training")
+
+    args = parser.parse_args()
     # init params
-    hmm_args = HMMArgs(num_emissions=100, num_states=200, seq_length=300, batch_size=256, num_epoch=40)
+    hmm_args = HMMArgs(num_emissions=args.num_emissions, num_states=args.num_states, seq_length=args.seq_length, batch_size=args.batch_size, num_epoch=args.num_epoch)
     save_flag = True
     print(hmm_args)
 

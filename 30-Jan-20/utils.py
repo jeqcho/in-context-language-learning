@@ -22,6 +22,9 @@ class HMMArgs:
     def __post_init__(self):
         self.model_filename = f"/n/netscratch/sham_lab/Everyone/jchooi/in-context-language-learning/models/hmm-H-{self.num_states}-E-{self.num_emissions}-L-{self.seq_length}-epoch-{self.num_epoch}.pkl"
     
+    def __str__(self):
+        return f"HMMArgs(num_emissions={self.num_emissions}, num_states={self.num_states}, seq_length={self.seq_length}, batch_size={self.batch_size}, num_epoch={self.num_epoch})"
+    
 
 class Tokenizer:
     def __init__(self, tokenizer_filename) -> None:
