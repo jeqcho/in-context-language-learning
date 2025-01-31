@@ -60,9 +60,16 @@ test_loader = get_test_loader(hmm_args)
 # train model
 test_loader, total_len = get_test_loader(hmm_args)
 pbar = tqdm(total=total_len)
+ce_list = []
 for batch, _ in test_loader:
     batch = batch.to(device)
-    hmm_wrapper.get_final_token_cross_entropy(batch)
+    ce = hmm_wrapper.get_final_token_cross_entropy(batch)
+    ce_list.append(ce)
     pbar.update(batch.shape[0])
 pbar.close()
+# %%
+ce_list = torch.tensor(ce_list)
+print(f"{ce_list.mean()=}")
+print(f"{ce_list.std()=}")
+
 # %%

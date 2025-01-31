@@ -353,3 +353,7 @@ max diff from 1 for next_state_prob: 2.384185791015625e-07
 TODO check this if there's a bug.
 
 # Jan 31
+
+I will try to complete the `get_final_token_cross_entropy` function first. We can then see if it returns the same answers to different batches.
+
+Great! We calculated the CE loss and it's different across batches.

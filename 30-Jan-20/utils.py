@@ -10,6 +10,7 @@ from jaxtyping import Int, Float
 from typing import List
 from pomegranate.hmm import DenseHMM
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 @dataclass
 class HMMArgs:
@@ -79,8 +80,10 @@ class HMMWrapper:
     ) -> Float[torch.Tensor, "seq_len vocab_size"]:
         pass
     
-    # get the emission distribution for each predicted hidden state
     def get_distributions_for_seq(self, seq):
+        """
+        Get the emission distribution for each predicted hidden state
+        """
         return [self.model.distributions[state].probs[0].tolist() for state in seq]
     
     def get_best_state_for_emission(self, emissions: Int[torch.Tensor, "batch seq_len"])->Int[torch.Tensor, "batch seq_len"]:
@@ -108,20 +111,24 @@ class HMMWrapper:
         """
         # define parameters to help check shapes
         b, s, _ = batch.shape
-        h = self.model.n_distributions
+        h = self.num_hidden
+        e = self.num_emissions
+        
+        # we only have 1d emissions in our experiments
+        assert batch.shape[-1] == 1
         
         # get the probabilites for the final hidden state
         hidden_state_prob = self.model.predict_proba(batch)
         assert hidden_state_prob.shape == (b, s, h)
         # check each row sums to one
-        print(f"max diff from 1 for hidden_state_prob: {abs(hidden_state_prob.sum(-1)-1.0).max()}")
+        # print(f"max diff from 1 for hidden_state_prob: {abs(hidden_state_prob.sum(-1)-1.0).max()}")
         assert torch.allclose(hidden_state_prob.sum(-1), torch.tensor(1.0), atol=1e-5)
         
         # get the transition matrix
         assert self.model.edges is not None
         transition_matrix = self.model.edges.exp()
         assert transition_matrix.shape == (h, h)
-        print(f"max diff from 1 for edges: {abs(transition_matrix.sum(-1)-1.0).max()}")
+        # print(f"max diff from 1 for edges: {abs(transition_matrix.sum(-1)-1.0).max()}")
         assert torch.allclose(transition_matrix.sum(-1), torch.tensor(1.0), atol=5e-2)
         
         # make them proper distributions
@@ -130,15 +137,34 @@ class HMMWrapper:
         
         # use the transition matrix to get a distribution for the next hidden state
         next_state_prob = einops.einsum(hidden_state_prob, transition_matrix, "b s h1, h1 h2 -> b s h2")
-        print(f"max diff from 1 for next_state_prob: {abs(next_state_prob.sum(-1)-1.0).max()}")
+        # print(f"max diff from 1 for next_state_prob: {abs(next_state_prob.sum(-1)-1.0).max()}")
         assert torch.allclose(next_state_prob.sum(-1), torch.tensor(1.0))
         
+        # we only care about the last token (by taking the next token probability of the second to last token)
+        next_state_prob = next_state_prob[:,-2,:]
+        assert next_state_prob.shape == (b, h)
+        
         # get the emisison matrix
+        emission_matrix = torch.tensor(self.get_distributions_for_seq(range(self.num_hidden)), device=device)
+        assert emission_matrix.shape == (h, e)
+        # print(f"max diff from 1 for emission_matrix: {abs(emission_matrix.sum(-1)-1.0).max()}")
+        assert torch.allclose(emission_matrix.sum(-1), torch.tensor(1.0))
         
         # use the emission matrix to get the probs for the next emission
+        next_emission = einops.einsum(next_state_prob, emission_matrix, "b h, h e -> b e")
+        assert next_emission.shape == (b, e)
+        # print(f"max diff from 1 for next_emission: {abs(next_emission.sum(-1)-1.0).max()}")
+        assert torch.allclose(next_emission.sum(-1), torch.tensor(1.0))
         
+        # get actual final tokens
+        final_tokens = batch[:,-1,0]
+        assert final_tokens.shape == (b,)
         
+        # print(f"san check {next_emission[0][0]=}")
+        # print(f"san check {final_tokens[0]=}")
         
+        # calculate the cross-entropy
+        return torch.nn.functional.cross_entropy(next_emission,final_tokens)
 
 
 def compare_word_lists(word_list_1: List[str], word_list_2: List[str]) -> None:
