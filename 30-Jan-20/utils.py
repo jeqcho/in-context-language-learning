@@ -4,6 +4,7 @@ Helper classes for HMMs
 
 from dataclasses import dataclass, field
 import json
+import einops
 import torch
 from jaxtyping import Int, Float
 from typing import List
@@ -99,7 +100,43 @@ class HMMWrapper:
             best_state_of[emission] = best_state
         if emissions is None:
             return torch.tensor(best_state_of)
-        return emissions.apply_(lambda emission: best_state_of[emission])        
+        return emissions.apply_(lambda emission: best_state_of[emission])     
+    
+    def get_final_token_cross_entropy(self, batch: Int[torch.Tensor, "batch seq_len emission_dim"]) -> Float[torch.Tensor, "batch n_emissions"]:
+        """
+        Returns the mean of the cross entropy for the final token
+        """
+        # define parameters to help check shapes
+        b, s, _ = batch.shape
+        h = self.model.n_distributions
+        
+        # get the probabilites for the final hidden state
+        hidden_state_prob = self.model.predict_proba(batch)
+        assert hidden_state_prob.shape == (b, s, h)
+        # check each row sums to one
+        print(f"max diff from 1 for hidden_state_prob: {abs(hidden_state_prob.sum(-1)-1.0).max()}")
+        assert torch.allclose(hidden_state_prob.sum(-1), torch.tensor(1.0), atol=1e-5)
+        
+        # get the transition matrix
+        assert self.model.edges is not None
+        transition_matrix = self.model.edges.exp()
+        assert transition_matrix.shape == (h, h)
+        print(f"max diff from 1 for edges: {abs(transition_matrix.sum(-1)-1.0).max()}")
+        assert torch.allclose(transition_matrix.sum(-1), torch.tensor(1.0), atol=5e-2)
+        
+        # make them proper distributions
+        hidden_state_prob = hidden_state_prob / hidden_state_prob.sum(-1, keepdim=True)
+        transition_matrix = transition_matrix / transition_matrix.sum(-1, keepdim=True)
+        
+        # use the transition matrix to get a distribution for the next hidden state
+        next_state_prob = einops.einsum(hidden_state_prob, transition_matrix, "b s h1, h1 h2 -> b s h2")
+        print(f"max diff from 1 for next_state_prob: {abs(next_state_prob.sum(-1)-1.0).max()}")
+        assert torch.allclose(next_state_prob.sum(-1), torch.tensor(1.0))
+        
+        # get the emisison matrix
+        
+        # use the emission matrix to get the probs for the next emission
+        
         
         
 

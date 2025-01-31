@@ -320,3 +320,36 @@ I also need to make it so that the command args are fed from the `.sh` so we don
 I will first build the tool so that we can feed in command args.
 
 I will now fix the print string for `HMMArgs`.
+
+The last assert here couldn't pass
+```
+# get the probabilites for the final hidden state
+hidden_state_prob = self.model.predict_proba(batch)
+assert hidden_state_prob.shape == (b, s, h)
+# check each row sums to one
+print(hidden_state_prob)
+assert torch.allclose(hidden_state_prob.sum(-1), torch.tensor(1.0))
+```
+
+This even returned 0.3345
+```
+hidden_state_prob[torch.where(hidden_state_prob.sum(-1) != 1.0)].max()
+```
+
+Turns out setting `atol=1e-5` passes.
+
+The `DenseHMM.edges` are log probabilities, and exponentiating then summing them yields probs like 0.9888. Check this with `atol=5e-2`.
+
+Note that these are the same but using two different batches
+```
+max diff from 1 for hidden_state_prob: 1.5497207641601562e-05
+max diff from 1 for edges: 0.011353731155395508
+max diff from 1 for next_state_prob: 2.384185791015625e-07
+max diff from 1 for hidden_state_prob: 1.5497207641601562e-05
+max diff from 1 for edges: 0.011353731155395508
+max diff from 1 for next_state_prob: 2.384185791015625e-07
+```
+
+TODO check this if there's a bug.
+
+# Jan 31
