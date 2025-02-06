@@ -5,9 +5,11 @@ Helper classes for HMMs
 from dataclasses import dataclass, field
 import json
 import einops
+import numpy as np
+from pomegranate.distributions.categorical import Categorical
 import torch
 from jaxtyping import Int, Float
-from typing import Iterable, List, Tuple
+from typing import Any, Iterable, List, Tuple
 from pomegranate.hmm import DenseHMM
 from torch.utils.data import TensorDataset, DataLoader
 from tqdm import tqdm
@@ -185,6 +187,27 @@ class HMMWrapper:
         ce_list = torch.tensor(ce_list)
         return ce_list.mean().item(), ce_list.std().item()
 
+    def train(self, save_flag=True):
+        # train model
+        train_loader, total_len = get_train_loader(self.hmm_args)
+        for i in range(self.hmm_args.num_epoch):
+            pbar = tqdm(total=total_len, desc=f"Epoch {i+1}")
+            print(f"{self.model.distributions[0].probs[0][0]=}")
+            for batch, _ in train_loader:
+                batch = batch.to(device)
+                # model.fit(batch)
+                self.model.summarize(batch)
+                pbar.update(batch.shape[0])
+            self.model.from_summaries()
+            print(f"Allocated memory after this epoch: {torch.cuda.memory_allocated() / 1e9} GB")
+            print(f"Reserved memory after this epoch: {torch.cuda.memory_reserved() / 1e9} GB")
+            pbar.close()
+
+        # save model
+        if save_flag:
+            # t.save(model, hmm_args.model_filename[:-4]+"fit.pkl")
+            torch.save(self.model, self.hmm_args.model_filename)
+
 
 def compare_word_lists(word_list_1: List[str], word_list_2: List[str]) -> None:
     """
@@ -237,3 +260,49 @@ def get_test_loader(hmm_args: HMMArgs) -> Tuple[Iterable, int]:
 
     train_dataset = TensorDataset(train_array, torch.empty_like(train_array))  # labels are dummy tensors
     return DataLoader(train_dataset, batch_size=hmm_args.batch_size, shuffle=True), len(train_dataset)
+
+
+def get_train_loader(hmm_args: HMMArgs) -> Tuple[Iterable, int]:
+    # get training data
+    train_fname = f"/n/netscratch/sham_lab/Everyone/jchooi/in-context-language-learning/data/TinyStories-{hmm_args.num_emissions}-train.txt"
+    test_fname = f"/n/netscratch/sham_lab/Everyone/jchooi/in-context-language-learning/data/TinyStories-{hmm_args.num_emissions}-test.txt"
+
+    with open(train_fname, "r") as f:
+        train_lines = f.readlines()
+
+    # concat into a big string and split into seq_length
+    train_lines = [line.strip() for line in train_lines]
+    train_string = " ".join(train_lines)
+    train_integers = [int(token) for token in train_string.split(" ")]
+
+    # log GPU
+    print(f"Allocated memory before: {torch.cuda.memory_allocated() / 1e9} GB")
+    print(f"Reserved memory before: {torch.cuda.memory_reserved() / 1e9} GB")
+
+    # remove trailing sequence
+    extra_length = len(train_integers) % hmm_args.seq_length
+    train_integers = train_integers[:-extra_length]
+    train_array = torch.tensor(train_integers).reshape(-1, hmm_args.seq_length)
+
+    # wrap each emission as 1d
+    train_array = torch.unsqueeze(train_array, -1)
+
+    train_dataset = TensorDataset(train_array, torch.empty_like(train_array))  # labels are dummy tensors
+    return DataLoader(train_dataset, batch_size=hmm_args.batch_size, shuffle=True), len(train_dataset)
+
+
+def init_model(hmm_args: HMMArgs) -> DenseHMM:
+    hidden_states: List[Any] = [None] * hmm_args.num_states
+    rng = np.random.default_rng(42)
+    for i in range(hmm_args.num_states):
+        dist = rng.uniform(low=0, high=1, size=(1, hmm_args.num_emissions))
+        dist = dist / dist.sum()
+        hidden_states[i] = Categorical(torch.tensor(dist).tolist())
+    edges = torch.full(
+        size=(hmm_args.num_states, hmm_args.num_states), fill_value=1.0 / hmm_args.num_states
+    ).tolist()
+    starts = torch.full(size=(hmm_args.num_states,), fill_value=1.0 / hmm_args.num_states).tolist()
+    ends = torch.full(size=(hmm_args.num_states,), fill_value=1.0 / hmm_args.num_states).tolist()
+
+    model = DenseHMM(hidden_states, edges=edges, starts=starts, ends=ends, verbose=False)
+    return model
