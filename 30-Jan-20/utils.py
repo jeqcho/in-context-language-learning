@@ -13,6 +13,7 @@ from typing import Any, Iterable, List, Tuple
 from pomegranate.hmm import DenseHMM
 from torch.utils.data import TensorDataset, DataLoader
 from tqdm import tqdm
+import wandb
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -31,7 +32,7 @@ class HMMArgs:
         self.model_filename = f"/n/netscratch/sham_lab/Everyone/jchooi/in-context-language-learning/models/hmm-H-{self.num_states}-E-{self.num_emissions}-L-{self.seq_length}-epoch-{self.num_epoch}.pkl"
 
     def __str__(self):
-        return f"HMMArgs(num_emissions={self.num_emissions}, num_states={self.num_states}, seq_length={self.seq_length}, batch_size={self.batch_size}, num_epoch={self.num_epoch})"
+        return f"H-{self.num_states}-E-{self.num_emissions}-L-{self.seq_length}-epoch-{self.num_epoch}"
 
     def __hash__(self):
         return hash((self.num_emissions, self.num_states, self.seq_length, self.batch_size, self.num_epoch))
@@ -188,6 +189,9 @@ class HMMWrapper:
         return ce_list.mean().item(), ce_list.std().item()
 
     def train(self, save_flag=True):
+        # set up wandb
+        wandb.init(project="in-context-language-learning", name=self.hmm_args.__str__())
+        
         # train model
         train_loader, total_len = get_train_loader(self.hmm_args)
         for i in range(self.hmm_args.num_epoch):
@@ -201,7 +205,13 @@ class HMMWrapper:
             self.model.from_summaries()
             print(f"Allocated memory after this epoch: {torch.cuda.memory_allocated() / 1e9} GB")
             print(f"Reserved memory after this epoch: {torch.cuda.memory_reserved() / 1e9} GB")
+            
+            # testing
+            ce_loss, ce_std = self.get_final_token_statistics()
+            wandb.log({"test-loss": ce_loss, "test-std": ce_std}, step=i)
             pbar.close()
+        
+        wandb.finish()
 
         # save model
         if save_flag:

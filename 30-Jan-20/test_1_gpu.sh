@@ -24,4 +24,4 @@ mamba activate olmo2
 
 PORT=25868
 
-torchrun --master_port=$PORT --nproc_per_node=1 ./train_hmm.py --num_emissions=100 --num_states=200 --seq_length=600 --batch_size=128 --num_epoch=40
+torchrun --master_port=$PORT --nproc_per_node=1 ./train_hmm.py --num_emissions=100 --num_states=200 --seq_length=100 --batch_size=256 --num_epoch=10
