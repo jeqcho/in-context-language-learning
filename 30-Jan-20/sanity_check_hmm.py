@@ -20,7 +20,7 @@ hmm_args = HMMArgs(num_emissions=100, num_states=100, seq_length=100, batch_size
 print(f"Loading model from {hmm_args.model_filename}")
 
 model = torch.load(hmm_args.model_filename).to(device)
-hmm_wrapper = HMMWrapper(model)
+hmm_wrapper = HMMWrapper(model, hmm_args)
 
 # load sample sentences
 sample_sentences_filename = f"sentences-{hmm_args.num_emissions}.txt"

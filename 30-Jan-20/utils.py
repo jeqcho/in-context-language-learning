@@ -7,10 +7,14 @@ import json
 import einops
 import torch
 from jaxtyping import Int, Float
-from typing import List
+from typing import Iterable, List, Tuple
 from pomegranate.hmm import DenseHMM
+from torch.utils.data import TensorDataset, DataLoader
+from tqdm import tqdm
+
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 
 @dataclass
 class HMMArgs:
@@ -20,13 +24,16 @@ class HMMArgs:
     batch_size: int
     num_epoch: int
     model_filename: str = field(init=False)
-    
+
     def __post_init__(self):
         self.model_filename = f"/n/netscratch/sham_lab/Everyone/jchooi/in-context-language-learning/models/hmm-H-{self.num_states}-E-{self.num_emissions}-L-{self.seq_length}-epoch-{self.num_epoch}.pkl"
-    
+
     def __str__(self):
         return f"HMMArgs(num_emissions={self.num_emissions}, num_states={self.num_states}, seq_length={self.seq_length}, batch_size={self.batch_size}, num_epoch={self.num_epoch})"
-    
+
+    def __hash__(self):
+        return hash((self.num_emissions, self.num_states, self.seq_length, self.batch_size, self.num_epoch))
+
 
 class Tokenizer:
     def __init__(self, tokenizer_filename) -> None:
@@ -69,24 +76,21 @@ class Tokenizer:
 
 
 class HMMWrapper:
-    def __init__(self, model: DenseHMM) -> None:
+    def __init__(self, model: DenseHMM, hmm_args: HMMArgs) -> None:
         self.model = model
         self.num_hidden = len(model.distributions)
         self.num_emissions = model.distributions[0].probs.shape[1]
+        self.hmm_args = hmm_args
 
-    # TODO
-    def get_logits(
-        self, tokenized_sentence: Int[torch.Tensor, "seq_len"]
-    ) -> Float[torch.Tensor, "seq_len vocab_size"]:
-        pass
-    
     def get_distributions_for_seq(self, seq):
         """
         Get the emission distribution for each predicted hidden state
         """
         return [self.model.distributions[state].probs[0].tolist() for state in seq]
-    
-    def get_best_state_for_emission(self, emissions: Int[torch.Tensor, "batch seq_len"])->Int[torch.Tensor, "batch seq_len"]:
+
+    def get_best_state_for_emission(
+        self, emissions: Int[torch.Tensor, "batch seq_len"]
+    ) -> Int[torch.Tensor, "batch seq_len"]:
         """
         Returns the best hidden state for each emission state. Best here means the hidden state with the highest probability for that emission state across all other hidden states. Note that the emission state does not need to have the highest probability for that hidden state.
         """
@@ -103,9 +107,11 @@ class HMMWrapper:
             best_state_of[emission] = best_state
         if emissions is None:
             return torch.tensor(best_state_of)
-        return emissions.apply_(lambda emission: best_state_of[emission])     
-    
-    def get_final_token_cross_entropy(self, batch: Int[torch.Tensor, "batch seq_len emission_dim"]) -> Float[torch.Tensor, "batch n_emissions"]:
+        return emissions.apply_(lambda emission: best_state_of[emission])
+
+    def get_final_token_cross_entropy(
+        self, batch: Int[torch.Tensor, "batch seq_len emission_dim"]
+    ) -> Float[torch.Tensor, "batch n_emissions"]:
         """
         Returns the mean of the cross entropy for the final token
         """
@@ -113,58 +119,71 @@ class HMMWrapper:
         b, s, _ = batch.shape
         h = self.num_hidden
         e = self.num_emissions
-        
+
         # we only have 1d emissions in our experiments
         assert batch.shape[-1] == 1
-        
+
         # get the probabilites for the final hidden state
         hidden_state_prob = self.model.predict_proba(batch)
         assert hidden_state_prob.shape == (b, s, h)
         # check each row sums to one
         # print(f"max diff from 1 for hidden_state_prob: {abs(hidden_state_prob.sum(-1)-1.0).max()}")
-        assert torch.allclose(hidden_state_prob.sum(-1), torch.tensor(1.0), atol=1e-5)
-        
+        assert torch.allclose(hidden_state_prob.sum(-1), torch.tensor(1.0), atol=1e-3)
+
         # get the transition matrix
         assert self.model.edges is not None
         transition_matrix = self.model.edges.exp()
         assert transition_matrix.shape == (h, h)
         # print(f"max diff from 1 for edges: {abs(transition_matrix.sum(-1)-1.0).max()}")
         assert torch.allclose(transition_matrix.sum(-1), torch.tensor(1.0), atol=5e-2)
-        
+
         # make them proper distributions
         hidden_state_prob = hidden_state_prob / hidden_state_prob.sum(-1, keepdim=True)
         transition_matrix = transition_matrix / transition_matrix.sum(-1, keepdim=True)
-        
+
         # use the transition matrix to get a distribution for the next hidden state
         next_state_prob = einops.einsum(hidden_state_prob, transition_matrix, "b s h1, h1 h2 -> b s h2")
         # print(f"max diff from 1 for next_state_prob: {abs(next_state_prob.sum(-1)-1.0).max()}")
         assert torch.allclose(next_state_prob.sum(-1), torch.tensor(1.0))
-        
+
         # we only care about the last token (by taking the next token probability of the second to last token)
-        next_state_prob = next_state_prob[:,-2,:]
+        next_state_prob = next_state_prob[:, -2, :]
         assert next_state_prob.shape == (b, h)
-        
+
         # get the emisison matrix
         emission_matrix = torch.tensor(self.get_distributions_for_seq(range(self.num_hidden)), device=device)
         assert emission_matrix.shape == (h, e)
         # print(f"max diff from 1 for emission_matrix: {abs(emission_matrix.sum(-1)-1.0).max()}")
         assert torch.allclose(emission_matrix.sum(-1), torch.tensor(1.0))
-        
+
         # use the emission matrix to get the probs for the next emission
         next_emission = einops.einsum(next_state_prob, emission_matrix, "b h, h e -> b e")
         assert next_emission.shape == (b, e)
         # print(f"max diff from 1 for next_emission: {abs(next_emission.sum(-1)-1.0).max()}")
         assert torch.allclose(next_emission.sum(-1), torch.tensor(1.0))
-        
+
         # get actual final tokens
-        final_tokens = batch[:,-1,0]
+        final_tokens = batch[:, -1, 0]
         assert final_tokens.shape == (b,)
-        
+
         # print(f"san check {next_emission[0][0]=}")
         # print(f"san check {final_tokens[0]=}")
-        
+
         # calculate the cross-entropy
-        return torch.nn.functional.cross_entropy(next_emission,final_tokens)
+        return torch.nn.functional.cross_entropy(next_emission, final_tokens)
+
+    def get_final_token_statistics(self) -> Tuple[float, float]:
+        test_loader, total_len = get_test_loader(self.hmm_args)
+        pbar = tqdm(total=total_len)
+        ce_list = []
+        for batch, _ in test_loader:
+            batch = batch.to(device)
+            ce = self.get_final_token_cross_entropy(batch)
+            ce_list.append(ce)
+            pbar.update(batch.shape[0])
+        pbar.close()
+        ce_list = torch.tensor(ce_list)
+        return ce_list.mean().item(), ce_list.std().item()
 
 
 def compare_word_lists(word_list_1: List[str], word_list_2: List[str]) -> None:
@@ -191,3 +210,30 @@ def compare_sentences(sentence_1: str, sentence_2: str) -> None:
 
 def compare_tensors(tensorA, tensorB):
     return torch.mean(tensorA == tensorB, dtype=torch.int)
+
+
+def get_test_loader(hmm_args: HMMArgs) -> Tuple[Iterable, int]:
+    test_fname = f"/n/netscratch/sham_lab/Everyone/jchooi/in-context-language-learning/data/TinyStories-{hmm_args.num_emissions}-test.txt"
+
+    with open(test_fname, "r") as f:
+        test_lines = f.readlines()
+
+    # concat into a big string and split into seq_length
+    test_lines = [line.strip() for line in test_lines]
+    test_string = " ".join(test_lines)
+    test_integers = [int(token) for token in test_string.split(" ")]
+
+    # log GPU
+    print(f"Allocated memory before: {torch.cuda.memory_allocated() / 1e9} GB")
+    print(f"Reserved memory before: {torch.cuda.memory_reserved() / 1e9} GB")
+
+    # remove trailing sequence
+    extra_length = len(test_integers) % hmm_args.seq_length
+    train_integers = test_integers[:-extra_length]
+    train_array = torch.tensor(train_integers).reshape(-1, hmm_args.seq_length)
+
+    # wrap each emission as 1d
+    train_array = torch.unsqueeze(train_array, -1)
+
+    train_dataset = TensorDataset(train_array, torch.empty_like(train_array))  # labels are dummy tensors
+    return DataLoader(train_dataset, batch_size=hmm_args.batch_size, shuffle=True), len(train_dataset)

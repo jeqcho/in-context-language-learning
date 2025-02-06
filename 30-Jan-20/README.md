@@ -357,3 +357,7 @@ TODO check this if there's a bug.
 I will try to complete the `get_final_token_cross_entropy` function first. We can then see if it returns the same answers to different batches.
 
 Great! We calculated the CE loss and it's different across batches.
+
+# Feb 6
+
+Back to working on this project. Will add wandb logging to track epoch effects and schedule more runs.

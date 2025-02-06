@@ -20,6 +20,7 @@ from torch.utils.data import TensorDataset, DataLoader
 from tqdm import tqdm
 import numpy as np
 import argparse
+import wandb
 
 # %%
 device = t.device("cuda" if t.cuda.is_available() else "cpu")

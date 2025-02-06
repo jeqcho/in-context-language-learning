@@ -6,12 +6,15 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=16
 #SBATCH --gres=gpu:1
-#SBATCH --time=0-00:10
+#SBATCH --time=0-04:00
 #SBATCH --mem=250G
 #SBATCH --output=logs/test-1-gpu-%A-%a.out
 #SBATCH --error=logs/test-1-gpu-%A-%a.err
 #SBATCH --mail-type=END
 #SBATCH --mail-user=jeqin_chooi+slurm@college.harvard.edu
+
+# wandb api key
+source ~/.wandb_key
 
 # Load modules
 module load python
@@ -19,6 +22,6 @@ module load python
 # Activate conda environment (optional)
 mamba activate olmo2
 
-PORT=25867
+PORT=25868
 
-torchrun --master_port=$PORT --nproc_per_node=1 ./train_hmm.py --num_emissions=100 --num_states=100 --seq_length=100 --batch_size=1024 --num_epoch=2
+torchrun --master_port=$PORT --nproc_per_node=1 ./train_hmm.py --num_emissions=100 --num_states=200 --seq_length=600 --batch_size=128 --num_epoch=40
