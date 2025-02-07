@@ -23,35 +23,30 @@ sweep_config = dict(
     method="grid",
     metric=dict(name="test-loss", goal="minimize"),
     parameters=dict(
-        num_states=dict(values=[100, 200, 400]),
-        seq_length=dict(values=[100, 200, 400]),
-        num_epoch=dict(values=[10, 20, 40]),
+        num_states=dict(values=[100, 200, 300, 400, 500, 600]),
     ),
 )
 
-
 def get_hmm_args_from_sweep(wandb_config) -> HMMArgs:
     num_states = wandb_config["num_states"]
-    seq_length = wandb_config["seq_length"]
-    num_epoch = wandb_config["num_epoch"]
+    seq_length = 100
     hmm_args = HMMArgs(
         num_emissions=100,
         num_states=num_states,
         seq_length=seq_length,
         batch_size=128,
-        num_epoch=num_epoch,
+        num_epoch=40,
     )
     return hmm_args
 
 
 def train():
     # Define args & initialize wandb
-    wandb.init(project="in-context-language-learning", reinit=False)
-
-    # Train the model with these new hyperparameters (the second `wandb.init` call will be ignored)
-    hmm_args = get_hmm_args_from_sweep(wandb.config)
-    print(hmm_args)
-
+    with wandb.init(project="in-context-language-learning", reinit=False) as run:
+        hmm_args = get_hmm_args_from_sweep(wandb.config)
+        print(hmm_args)
+        run.name = hmm_args.__str__()
+    
     # init model
     model = init_model(hmm_args).to(device)
     hmm_wrapper = HMMWrapper(model, hmm_args)
@@ -60,7 +55,7 @@ def train():
 
 if __name__ == "__main__":
     sweep_id = wandb.sweep(sweep=sweep_config, project="in-context-language-learning")
-    wandb.agent(sweep_id=sweep_id, function=train, count=5)
+    wandb.agent(sweep_id=sweep_id, function=train)
     wandb.finish()
 
     # log GPU

@@ -6,7 +6,7 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=16
 #SBATCH --gres=gpu:1
-#SBATCH --time=0-08:00
+#SBATCH --time=0-10:00
 #SBATCH --mem=250G
 #SBATCH --output=logs/sweep-%A-%a.out
 #SBATCH --error=logs/sweep-%A-%a.err

@@ -28,12 +28,11 @@ if __name__ == "__main__":
     parser.add_argument("--seq_length", type=int, required=True, help="Length of the sequences used for training")
     parser.add_argument("--batch_size", type=int, required=True, help="Batch size for training")
     parser.add_argument("--num_epoch", type=int, required=True, help="Number of epochs for training")
-
+    parser.add_argument("--unique", action="store_true", help="Train on unique sentences only")
+    
     args = parser.parse_args()
     # init params
-    hmm_args = HMMArgs(num_emissions=args.num_emissions, num_states=args.num_states, seq_length=args.seq_length, batch_size=args.batch_size, num_epoch=args.num_epoch)
-    save_flag = True
-    print(hmm_args)
+    hmm_args = HMMArgs(num_emissions=args.num_emissions, num_states=args.num_states, seq_length=args.seq_length, batch_size=args.batch_size, num_epoch=args.num_epoch, unique=args.unique)
 
     # init model
     model = init_model(hmm_args).to(device)

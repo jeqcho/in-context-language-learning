@@ -361,3 +361,9 @@ Great! We calculated the CE loss and it's different across batches.
 # Feb 6
 
 Back to working on this project. Will add wandb logging to track epoch effects and schedule more runs.
+
+# Feb 7
+
+Got the results from wandb. Seems like sequence length doesn't matter, but number of states matter. Fixing sequence length now and scheduling a sweep for number of states. Sbatched.
+
+Now, let's try training with unique sentences instead.

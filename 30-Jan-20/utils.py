@@ -27,12 +27,18 @@ class HMMArgs:
     batch_size: int
     num_epoch: int
     model_filename: str = field(init=False)
+    unique: bool
 
     def __post_init__(self):
-        self.model_filename = f"/n/netscratch/sham_lab/Everyone/jchooi/in-context-language-learning/models/hmm-H-{self.num_states}-E-{self.num_emissions}-L-{self.seq_length}-epoch-{self.num_epoch}.pkl"
+        self.model_filename = (
+            f"/n/netscratch/sham_lab/Everyone/jchooi/in-context-language-learning/models/hmm-{self.__str__()}.pkl"
+        )
 
     def __str__(self):
-        return f"H-{self.num_states}-E-{self.num_emissions}-L-{self.seq_length}-epoch-{self.num_epoch}"
+        string = f"H-{self.num_states}-E-{self.num_emissions}-L-{self.seq_length}-epoch-{self.num_epoch}"
+        if self.unique:
+            string += "-unique"
+        return string
 
     def __hash__(self):
         return hash((self.num_emissions, self.num_states, self.seq_length, self.batch_size, self.num_epoch))
@@ -191,7 +197,7 @@ class HMMWrapper:
     def train(self, save_flag=True):
         # set up wandb
         wandb.init(project="in-context-language-learning", name=self.hmm_args.__str__())
-        
+
         # train model
         train_loader, total_len = get_train_loader(self.hmm_args)
         for i in range(self.hmm_args.num_epoch):
@@ -205,12 +211,12 @@ class HMMWrapper:
             self.model.from_summaries()
             print(f"Allocated memory after this epoch: {torch.cuda.memory_allocated() / 1e9} GB")
             print(f"Reserved memory after this epoch: {torch.cuda.memory_reserved() / 1e9} GB")
-            
+
             # testing
             ce_loss, ce_std = self.get_final_token_statistics()
             wandb.log({"test-loss": ce_loss, "test-std": ce_std}, step=i)
             pbar.close()
-        
+
         wandb.finish()
 
         # save model
@@ -274,8 +280,7 @@ def get_test_loader(hmm_args: HMMArgs) -> Tuple[Iterable, int]:
 
 def get_train_loader(hmm_args: HMMArgs) -> Tuple[Iterable, int]:
     # get training data
-    train_fname = f"/n/netscratch/sham_lab/Everyone/jchooi/in-context-language-learning/data/TinyStories-{hmm_args.num_emissions}-train.txt"
-    test_fname = f"/n/netscratch/sham_lab/Everyone/jchooi/in-context-language-learning/data/TinyStories-{hmm_args.num_emissions}-test.txt"
+    train_fname = f"/n/netscratch/sham_lab/Everyone/jchooi/in-context-language-learning/data/TinyStories-{hmm_args.num_emissions}-train{'-unique' if hmm_args.unique else ''}.txt"
 
     with open(train_fname, "r") as f:
         train_lines = f.readlines()
@@ -284,6 +289,8 @@ def get_train_loader(hmm_args: HMMArgs) -> Tuple[Iterable, int]:
     train_lines = [line.strip() for line in train_lines]
     train_string = " ".join(train_lines)
     train_integers = [int(token) for token in train_string.split(" ")]
+
+    print(f"Total number of training tokens: {len(train_integers)}")
 
     # log GPU
     print(f"Allocated memory before: {torch.cuda.memory_allocated() / 1e9} GB")
