@@ -12,7 +12,7 @@
 #SBATCH --error=logs/scan_num_states-%A-%a.err
 #SBATCH --mail-type=END
 #SBATCH --mail-user=jeqin_chooi+slurm@college.harvard.edu
-#SBATCH --array=1-6
+#SBATCH --array=3-3
 
 # wandb api key
 source ~/.wandb_key
@@ -23,10 +23,9 @@ module load python
 # Activate conda environment (optional)
 mamba activate olmo2
 
-PORT=25868
+PORTS=(25970 25971 25972 25973 25974 25975)
 NUM_STATES=(100 200 300 400 500 600)
-BATCH_SIZES=(1024 256 128 128 64 64)
-PORTS=(25868 25869 25870 25871 25872 25873)
+BATCH_SIZES=(1024 256 256 256 128 128)
 INDEX=$((SLURM_ARRAY_TASK_ID - 1))
 
-torchrun --master_port=${PORTS[$INDEX]} --nproc_per_node=1 ./train_hmm.py --num_emissions=100 --num_states=${NUM_STATES[$INDEX]} --seq_length=100 --batch_size=${BATCH_SIZES[$INDEX]} --num_epoch=50
+torchrun --master_port=${PORTS[$INDEX]} --nproc_per_node=1 ./train_hmm.py --num_emissions=100 --num_states=${NUM_STATES[$INDEX]} --seq_length=100 --batch_size=${BATCH_SIZES[$INDEX]} --num_epoch=50 --unique

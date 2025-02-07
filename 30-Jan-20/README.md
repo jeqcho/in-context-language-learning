@@ -366,4 +366,23 @@ Back to working on this project. Will add wandb logging to track epoch effects a
 
 Got the results from wandb. Seems like sequence length doesn't matter, but number of states matter. Fixing sequence length now and scheduling a sweep for number of states. Sbatched.
 
+At the end of today, check back the big states small batches and see if we can speed them up with bigger batches.
+
+NUM_STATES=(100 200 300 400 500 600)
+BATCH_SIZES=(1024 256 128 128 64 64)
+EST TIME BATCH=(30s, 3m, 13m, 17m, 27m, 32m)
+EST TIME COMP=(25m, 2h30m, 10h50m, 14h10m, 22h30m, 26h40m)
+
+We gave a budget of 4 hours.
+
+I cancelled the last three runs and resubmitted with bigger batch sizes and time budget.
+NUM_STATES=(100 200 300 400 500 600)
+BATCH_SIZES=(1024 256 256 256 128 128)
+EST TIME BATCH=(30s, 3m, 4.5m, 9m, 14m, 17m)
+EST TIME COMP=(25m, 2h30m, 3h45m, 7h30m, 11h40m, 14h10m)
+
+I also added batch size to the name of the models. Let's rerun everything at the end of today.
+
 Now, let's try training with unique sentences instead.
+
+All scheduled.

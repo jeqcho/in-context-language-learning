@@ -35,7 +35,7 @@ class HMMArgs:
         )
 
     def __str__(self):
-        string = f"H-{self.num_states}-E-{self.num_emissions}-L-{self.seq_length}-epoch-{self.num_epoch}"
+        string = f"H-{self.num_states}-E-{self.num_emissions}-L-{self.seq_length}-B-{self.batch_size}-epoch-{self.num_epoch}"
         if self.unique:
             string += "-unique"
         return string
@@ -90,6 +90,7 @@ class HMMWrapper:
         self.num_hidden = len(model.distributions)
         self.num_emissions = model.distributions[0].probs.shape[1]
         self.hmm_args = hmm_args
+        self.tokens_seen = 0
 
     def get_distributions_for_seq(self, seq):
         """
@@ -214,7 +215,8 @@ class HMMWrapper:
 
             # testing
             ce_loss, ce_std = self.get_final_token_statistics()
-            wandb.log({"test-loss": ce_loss, "test-std": ce_std}, step=i)
+            self.tokens_seen += total_len
+            wandb.log({"test-loss": ce_loss, "test-std": ce_std, "tokens-seen": self.tokens_seen}, step=i)
             pbar.close()
 
         wandb.finish()
