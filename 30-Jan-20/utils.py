@@ -138,18 +138,19 @@ class HMMWrapper:
         assert hidden_state_prob.shape == (b, s, h)
         # check each row sums to one
         # print(f"max diff from 1 for hidden_state_prob: {abs(hidden_state_prob.sum(-1)-1.0).max()}")
-        assert torch.allclose(hidden_state_prob.sum(-1), torch.tensor(1.0), atol=1e-3)
 
         # get the transition matrix
         assert self.model.edges is not None
         transition_matrix = self.model.edges.exp()
         assert transition_matrix.shape == (h, h)
         # print(f"max diff from 1 for edges: {abs(transition_matrix.sum(-1)-1.0).max()}")
-        assert torch.allclose(transition_matrix.sum(-1), torch.tensor(1.0), atol=5e-2)
 
         # make them proper distributions
         hidden_state_prob = hidden_state_prob / hidden_state_prob.sum(-1, keepdim=True)
         transition_matrix = transition_matrix / transition_matrix.sum(-1, keepdim=True)
+
+        assert torch.allclose(hidden_state_prob.sum(-1), torch.tensor(1.0), atol=1e-3)
+        assert torch.allclose(transition_matrix.sum(-1), torch.tensor(1.0), atol=5e-2)
 
         # use the transition matrix to get a distribution for the next hidden state
         next_state_prob = einops.einsum(hidden_state_prob, transition_matrix, "b s h1, h1 h2 -> b s h2")
@@ -182,8 +183,8 @@ class HMMWrapper:
         # calculate the cross-entropy
         return torch.nn.functional.cross_entropy(next_emission, final_tokens)
 
-    def get_final_token_statistics(self) -> Tuple[float, float]:
-        test_loader, total_len = get_test_loader(self.hmm_args)
+    def get_final_token_statistics(self, unique=False) -> Tuple[float, float]:
+        test_loader, total_len = get_test_loader(self.hmm_args, unique)
         pbar = tqdm(total=total_len)
         ce_list = []
         for batch, _ in test_loader:
@@ -201,11 +202,13 @@ class HMMWrapper:
 
         # train model
         train_loader, total_len = get_train_loader(self.hmm_args)
+        print(f"Allocated memory after getting train loader: {torch.cuda.memory_allocated() / 1e9} GB")
+        print(f"Reserved memory after getting train loader: {torch.cuda.memory_reserved() / 1e9} GB")
         for i in range(self.hmm_args.num_epoch):
             pbar = tqdm(total=total_len, desc=f"Epoch {i+1}")
-            print(f"{self.model.distributions[0].probs[0][0]=}")
             for batch, _ in train_loader:
                 batch = batch.to(device)
+                self.tokens_seen += batch.numel()
                 # model.fit(batch)
                 self.model.summarize(batch)
                 pbar.update(batch.shape[0])
@@ -215,8 +218,17 @@ class HMMWrapper:
 
             # testing
             ce_loss, ce_std = self.get_final_token_statistics()
-            self.tokens_seen += total_len
-            wandb.log({"test-loss": ce_loss, "test-std": ce_std, "tokens-seen": self.tokens_seen}, step=i)
+            ce_loss_uniq, ce_std_uniq = self.get_final_token_statistics(unique=True)
+            wandb.log(
+                {
+                    "test-loss": ce_loss,
+                    "test-std": ce_std,
+                    "test-loss-unique": ce_loss_uniq,
+                    "test-std-unique": ce_std_uniq,
+                    "tokens-seen": self.tokens_seen,
+                },
+                step=i,
+            )
             pbar.close()
 
         wandb.finish()
@@ -253,8 +265,8 @@ def compare_tensors(tensorA, tensorB):
     return torch.mean(tensorA == tensorB, dtype=torch.int)
 
 
-def get_test_loader(hmm_args: HMMArgs) -> Tuple[Iterable, int]:
-    test_fname = f"/n/netscratch/sham_lab/Everyone/jchooi/in-context-language-learning/data/TinyStories-{hmm_args.num_emissions}-test.txt"
+def get_test_loader(hmm_args: HMMArgs, unique: bool = False) -> Tuple[Iterable, int]:
+    test_fname = f"/n/netscratch/sham_lab/Everyone/jchooi/in-context-language-learning/data/TinyStories-{hmm_args.num_emissions}-test{'-unique' if unique else ''}.txt"
 
     with open(test_fname, "r") as f:
         test_lines = f.readlines()
@@ -263,6 +275,7 @@ def get_test_loader(hmm_args: HMMArgs) -> Tuple[Iterable, int]:
     test_lines = [line.strip() for line in test_lines]
     test_string = " ".join(test_lines)
     test_integers = [int(token) for token in test_string.split(" ")]
+    
 
     # log GPU
     print(f"Allocated memory before: {torch.cuda.memory_allocated() / 1e9} GB")
@@ -270,12 +283,16 @@ def get_test_loader(hmm_args: HMMArgs) -> Tuple[Iterable, int]:
 
     # remove trailing sequence
     extra_length = len(test_integers) % hmm_args.seq_length
-    train_integers = test_integers[:-extra_length]
+    if extra_length > 0:
+        train_integers = test_integers[:-extra_length]
+    else:
+        train_integers = test_integers
+    
     train_array = torch.tensor(train_integers).reshape(-1, hmm_args.seq_length)
 
     # wrap each emission as 1d
     train_array = torch.unsqueeze(train_array, -1)
-
+    
     train_dataset = TensorDataset(train_array, torch.empty_like(train_array))  # labels are dummy tensors
     return DataLoader(train_dataset, batch_size=hmm_args.batch_size, shuffle=True), len(train_dataset)
 
@@ -305,8 +322,10 @@ def get_train_loader(hmm_args: HMMArgs) -> Tuple[Iterable, int]:
 
     # wrap each emission as 1d
     train_array = torch.unsqueeze(train_array, -1)
-
+    
     train_dataset = TensorDataset(train_array, torch.empty_like(train_array))  # labels are dummy tensors
+    
+    
     return DataLoader(train_dataset, batch_size=hmm_args.batch_size, shuffle=True), len(train_dataset)
 
 

@@ -386,3 +386,19 @@ I also added batch size to the name of the models. Let's rerun everything at the
 Now, let's try training with unique sentences instead.
 
 All scheduled.
+
+# Feb 8
+
+Good plots! `tokens_seen` did not get logged. Try again with that. Also might be good to get the test loss from the unique dataset too.
+
+Then we also have to chech why `tokens_seen` is not logged. Sbatched a quick run to see.
+
+We also have to check why the runs failed. The H-200 case is at epoch 19 with:
+
+`assert torch.allclose(transition_matrix.sum(-1), torch.tensor(1.0), atol=5e-2)`
+
+same error for H-300 at epoch 15, H-400 at epoch 15, H-500 at epoch 16, H-600 at epoch 16, H-300-unique at epoch 21.
+
+I moved two assert statements on distributions to after they are normalized.
+
+Fix all bugs
