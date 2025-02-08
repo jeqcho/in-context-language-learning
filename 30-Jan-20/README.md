@@ -401,4 +401,20 @@ same error for H-300 at epoch 15, H-400 at epoch 15, H-500 at epoch 16, H-600 at
 
 I moved two assert statements on distributions to after they are normalized.
 
-Fix all bugs
+Fix all bugs.
+
+Now I will schedule a big run to scan across H, and also toggle unique.
+
+I will run at H-100 for 200 epochs.
+
+Now I will run for the uniques. I will need a new estimate for the durations.
+
+NUM_STATES=(100 200 300 400 500 600)
+BATCH_SIZES=(1024 256 256 256 128 128)
+EST TIME BATCH=(30s, 3m, 4.5m, 9m, 14m, 17m)
+EST TIME COMP=(25m, 2h30m, 3h45m, 7h30m, 11h40m, 14h10m)
+EST TIME COMP=(25m, 150m, 225m, 450m, 700m, 850m)
+
+New total sequences is 6899, old one is 74514, so it should be 10x faster, i.e. taking 10% of the time.
+
+EST TIME COMP=(3m, 15m, 23m, 45m, 70m, 85m)

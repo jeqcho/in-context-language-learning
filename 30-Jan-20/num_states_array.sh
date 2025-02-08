@@ -6,13 +6,13 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=16
 #SBATCH --gres=gpu:1
-#SBATCH --time=0-04:00
+#SBATCH --time=0-02:00
 #SBATCH --mem=250G
 #SBATCH --output=logs/scan_num_states-%A-%a.out
 #SBATCH --error=logs/scan_num_states-%A-%a.err
 #SBATCH --mail-type=END
 #SBATCH --mail-user=jeqin_chooi+slurm@college.harvard.edu
-#SBATCH --array=3-3
+#SBATCH --array=2-6%1
 
 # wandb api key
 source ~/.wandb_key
@@ -23,7 +23,7 @@ module load python
 # Activate conda environment (optional)
 mamba activate olmo2
 
-PORTS=(25970 25971 25972 25973 25974 25975)
+PORTS=(25990 25991 259792 25993 25994 25995)
 NUM_STATES=(100 200 300 400 500 600)
 BATCH_SIZES=(1024 256 256 256 128 128)
 INDEX=$((SLURM_ARRAY_TASK_ID - 1))

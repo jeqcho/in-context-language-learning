@@ -14,6 +14,8 @@ The trained HMM is saved at:
 from utils import *
 import torch
 import argparse
+import time
+from time import gmtime, strftime
 
 # %%
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -35,6 +37,7 @@ if __name__ == "__main__":
     hmm_args = HMMArgs(num_emissions=args.num_emissions, num_states=args.num_states, seq_length=args.seq_length, batch_size=args.batch_size, num_epoch=args.num_epoch, unique=args.unique)
 
     # init model
+    start_time = time.time()
     model = init_model(hmm_args).to(device)
     hmm_wrapper = HMMWrapper(model, hmm_args)
 
@@ -42,4 +45,10 @@ if __name__ == "__main__":
     print(f"Reserved memory after init: {torch.cuda.memory_reserved() / 1e9} GB")
 
     hmm_wrapper.train()
+    
+    # post-training
+    end_time = time.time()
+    time_taken = int(float(end_time) - float(start_time))
+    time_taken = strftime("%H:%M:%S", gmtime(time_taken))
+    print(f"{time_taken=}")
 # %%
