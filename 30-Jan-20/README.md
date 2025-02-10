@@ -418,3 +418,60 @@ EST TIME COMP=(25m, 150m, 225m, 450m, 700m, 850m)
 New total sequences is 6899, old one is 74514, so it should be 10x faster, i.e. taking 10% of the time.
 
 EST TIME COMP=(3m, 15m, 23m, 45m, 70m, 85m)
+Actual time for the first is 4m+. I think 2h is good.
+
+Submitted the rest as a sequential sbatch.
+
+Now I will proceed to write the code for measuring KL divergence with other strategies like uniform, unigram, bigram.
+
+Since each test is the same, we can just evaluate the logits once for each strategy and compare the HMM logits for each test round.
+
+It seems like the HMM learns much more efficiently (by measuring tokens) if we train them on unique sequences instead of duplicated ones.
+
+I will train a unique HMM with more epochs. 50m for 500 epochs. Sent.
+
+Now, I will write the KL divergence stuff. Begin with uniform. Uniform done. For unigram, can check this [link](https://discuss.pytorch.org/t/batched-bincount/72819/2).
+
+# Feb 9
+
+Run results seem to suggest that training on the duplicated dataset is worth it.
+
+Might be worth running a long run for H-600 unique to see if anything extraordinary happens. Submitted.
+
+Might be worth checking if changing seq_len really doesn't matter. Will train a H-500 on L-100 to L-600.
+
+Prev
+NUM_STATES=(100 200 300 400 500 600)
+BATCH_SIZES=(1024 256 256 256 128 128)
+
+Result for H-500 E-100
+SEQ_LEN=(100 200 300 400 500 600)
+BATCH_SIZES=(256 128 64 64 32 32)
+
+Not maximized for H-500 L-100
+EMISSIONS=(100 200 300 400 500)
+BATCH_SIZES=(256 256 256 256 256)
+
+# Feb 10
+
+It takes longer to train for larger emissions. I will set a max epoch size.
+
+I am testing between training a HMM over an entire epoch before calling `from_summaries` vs calling `from_summaries` every step.
+- time taken: 4m15s vs 4m05s
+- test loss after 5 epochs: 4.57892 vs 4.04427
+- unique test loss after 5 epochs: 4.58725 vs 4.30929
+
+Let's do another experiment where we update every 2 steps.
+- time taken: 4m02s
+- test loss after 5 epochs: 4.04032
+- unique test loss after 5 epochs: 4.30041
+
+It could be possible that updating every step reaches a local minimum faster than updating every epoch reaching a global minimum.
+
+Double check that no testing gives the same loss. Then try to optimize testing with no_grad (TODO).
+- This seems to be different, which is worrying.
+- Set a seed, and sbatched two runs.
+- This looks diff.
+- I will sbatch another pair and see if the diff is significant.
+
+Also will sbatch a large run to scan over update_freq. Sent.

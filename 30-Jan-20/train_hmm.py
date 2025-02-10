@@ -10,6 +10,7 @@ The trained HMM is saved at:
 - L: Length of the sequences used for training
 
 """
+
 # %%
 from utils import *
 import torch
@@ -23,18 +24,38 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # %%
 
 if __name__ == "__main__":
+    torch.manual_seed(91)
     # receive args from commmand
-    parser = argparse.ArgumentParser(description="Train a Hidden Markov Model (HMM) using the pomegranate library.")
+    parser = argparse.ArgumentParser(
+        description="Train a Hidden Markov Model (HMM) using the pomegranate library."
+    )
     parser.add_argument("--num_emissions", type=int, required=True, help="Number of emissions in the HMM")
     parser.add_argument("--num_states", type=int, required=True, help="Number of states in the HMM")
     parser.add_argument("--seq_length", type=int, required=True, help="Length of the sequences used for training")
     parser.add_argument("--batch_size", type=int, required=True, help="Batch size for training")
     parser.add_argument("--num_epoch", type=int, required=True, help="Number of epochs for training")
+    parser.add_argument(
+        "--update_freq", type=int, help="Number of batches before calling from_summaries."
+    )
     parser.add_argument("--unique", action="store_true", help="Train on unique sentences only")
-    
+    parser.add_argument("--no_save", action="store_true", help="Do not save the model")
+
     args = parser.parse_args()
+    args.save = not args.no_save
+    if args.update_freq is None:
+        args.update_freq = "all"
+    else:
+        assert args.update_freq > 0
     # init params
-    hmm_args = HMMArgs(num_emissions=args.num_emissions, num_states=args.num_states, seq_length=args.seq_length, batch_size=args.batch_size, num_epoch=args.num_epoch, unique=args.unique)
+    hmm_args = HMMArgs(
+        num_emissions=args.num_emissions,
+        num_states=args.num_states,
+        seq_length=args.seq_length,
+        batch_size=args.batch_size,
+        num_epoch=args.num_epoch,
+        unique=args.unique,
+        update_freq=args.update_freq,
+    )
 
     # init model
     start_time = time.time()
@@ -44,8 +65,8 @@ if __name__ == "__main__":
     # log GPU
     print(f"Reserved memory after init: {torch.cuda.memory_reserved() / 1e9} GB")
 
-    hmm_wrapper.train()
-    
+    hmm_wrapper.train(save_flag=args.save)
+
     # post-training
     end_time = time.time()
     time_taken = int(float(end_time) - float(start_time))

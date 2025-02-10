@@ -2,7 +2,6 @@
 Helper classes for HMMs
 """
 
-from dataclasses import dataclass, field
 import json
 import einops
 import numpy as np
@@ -14,34 +13,10 @@ from pomegranate.hmm import DenseHMM
 from torch.utils.data import TensorDataset, DataLoader
 from tqdm import tqdm
 import wandb
-
+from HMMArgs import HMMArgs
+import itertools
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-
-@dataclass
-class HMMArgs:
-    num_emissions: int
-    num_states: int
-    seq_length: int
-    batch_size: int
-    num_epoch: int
-    model_filename: str = field(init=False)
-    unique: bool
-
-    def __post_init__(self):
-        self.model_filename = (
-            f"/n/netscratch/sham_lab/Everyone/jchooi/in-context-language-learning/models/hmm-{self.__str__()}.pkl"
-        )
-
-    def __str__(self):
-        string = f"H-{self.num_states}-E-{self.num_emissions}-L-{self.seq_length}-B-{self.batch_size}-epoch-{self.num_epoch}"
-        if self.unique:
-            string += "-unique"
-        return string
-
-    def __hash__(self):
-        return hash((self.num_emissions, self.num_states, self.seq_length, self.batch_size, self.num_epoch))
 
 
 class Tokenizer:
@@ -102,7 +77,9 @@ class HMMWrapper:
         self, emissions: Int[torch.Tensor, "batch seq_len"]
     ) -> Int[torch.Tensor, "batch seq_len"]:
         """
-        Returns the best hidden state for each emission state. Best here means the hidden state with the highest probability for that emission state across all other hidden states. Note that the emission state does not need to have the highest probability for that hidden state.
+        Returns the best hidden state for each emission state.
+        Best here means the hidden state with the highest probability for that emission state across all other hidden states.
+        Note that the emission state does not need to have the highest probability for that hidden state.
         """
         best_state_of = [None] * self.num_emissions
         for emission in range(self.num_emissions):
@@ -204,21 +181,42 @@ class HMMWrapper:
         train_loader, total_len = get_train_loader(self.hmm_args)
         print(f"Allocated memory after getting train loader: {torch.cuda.memory_allocated() / 1e9} GB")
         print(f"Reserved memory after getting train loader: {torch.cuda.memory_reserved() / 1e9} GB")
+        dirty_flag = False
         for i in range(self.hmm_args.num_epoch):
+            print(f"Begin training for epoch {i+1}")
             pbar = tqdm(total=total_len, desc=f"Epoch {i+1}")
-            for batch, _ in train_loader:
+            for idx, (batch, _) in enumerate(train_loader):
                 batch = batch.to(device)
                 self.tokens_seen += batch.numel()
                 # model.fit(batch)
                 self.model.summarize(batch)
+                dirty_flag = True
+                if self.hmm_args.update_freq != "all":
+                    if idx % self.hmm_args.update_freq == 0:
+                        self.model.from_summaries()
+                        dirty_flag = False
+
                 pbar.update(batch.shape[0])
-            self.model.from_summaries()
+            if dirty_flag or self.hmm_args.update_freq == "all":
+                self.model.from_summaries()
             print(f"Allocated memory after this epoch: {torch.cuda.memory_allocated() / 1e9} GB")
             print(f"Reserved memory after this epoch: {torch.cuda.memory_reserved() / 1e9} GB")
+            pbar.close()
+            print(f"Training complete for epoch {i+1}!")
+            print(f"Begin testing for epoch {i+1}")
 
             # testing
+            if i % 2 == 0:
+                # checking if testing affects weights
+                # to be removed
+                continue
+            print(f"Begin testing on duplicated sequences for epoch {i+1}")
             ce_loss, ce_std = self.get_final_token_statistics()
+            print(f"Begin testing on unique sequences for epoch {i+1}")
             ce_loss_uniq, ce_std_uniq = self.get_final_token_statistics(unique=True)
+            print(f"Testing complete for epoch {i+1}!")
+
+            # logging
             wandb.log(
                 {
                     "test-loss": ce_loss,
@@ -229,14 +227,16 @@ class HMMWrapper:
                 },
                 step=i,
             )
-            pbar.close()
+            print(f"Epoch {i+1} is complete!")
 
         wandb.finish()
 
         # save model
         if save_flag:
             # t.save(model, hmm_args.model_filename[:-4]+"fit.pkl")
+            print(f"Saving the model...")
             torch.save(self.model, self.hmm_args.model_filename)
+            print(f"Model saved!")
 
 
 def compare_word_lists(word_list_1: List[str], word_list_2: List[str]) -> None:
@@ -275,7 +275,6 @@ def get_test_loader(hmm_args: HMMArgs, unique: bool = False) -> Tuple[Iterable, 
     test_lines = [line.strip() for line in test_lines]
     test_string = " ".join(test_lines)
     test_integers = [int(token) for token in test_string.split(" ")]
-    
 
     # log GPU
     print(f"Allocated memory before: {torch.cuda.memory_allocated() / 1e9} GB")
@@ -287,12 +286,12 @@ def get_test_loader(hmm_args: HMMArgs, unique: bool = False) -> Tuple[Iterable, 
         train_integers = test_integers[:-extra_length]
     else:
         train_integers = test_integers
-    
+
     train_array = torch.tensor(train_integers).reshape(-1, hmm_args.seq_length)
 
     # wrap each emission as 1d
     train_array = torch.unsqueeze(train_array, -1)
-    
+
     train_dataset = TensorDataset(train_array, torch.empty_like(train_array))  # labels are dummy tensors
     return DataLoader(train_dataset, batch_size=hmm_args.batch_size, shuffle=True), len(train_dataset)
 
@@ -322,10 +321,9 @@ def get_train_loader(hmm_args: HMMArgs) -> Tuple[Iterable, int]:
 
     # wrap each emission as 1d
     train_array = torch.unsqueeze(train_array, -1)
-    
+
     train_dataset = TensorDataset(train_array, torch.empty_like(train_array))  # labels are dummy tensors
-    
-    
+
     return DataLoader(train_dataset, batch_size=hmm_args.batch_size, shuffle=True), len(train_dataset)
 
 
