@@ -34,10 +34,13 @@ if __name__ == "__main__":
     parser.add_argument("--seq_length", type=int, required=True, help="Length of the sequences used for training")
     parser.add_argument("--batch_size", type=int, required=True, help="Batch size for training")
     parser.add_argument("--num_epoch", type=int, required=True, help="Number of epochs for training")
-    parser.add_argument(
-        "--update_freq", type=int, help="Number of batches before calling from_summaries."
-    )
+    parser.add_argument("--update_freq", type=int, help="Number of batches before calling from_summaries.")
     parser.add_argument("--unique", action="store_true", help="Train on unique sentences only")
+    parser.add_argument(
+        "--save_epoch_freq",
+        type=int,
+        help="Save the model at that epoch frequency. If save_epoch_freq=5, save model after 5 epochs of training.",
+    )
     parser.add_argument("--no_save", action="store_true", help="Do not save the model")
 
     args = parser.parse_args()
@@ -46,6 +49,12 @@ if __name__ == "__main__":
         args.update_freq = "all"
     else:
         assert args.update_freq > 0
+
+    if args.no_save is None:
+        assert args.save_epoch_freq is not None
+    else:
+        assert args.save_epoch_freq is None
+
     # init params
     hmm_args = HMMArgs(
         num_emissions=args.num_emissions,
@@ -65,7 +74,7 @@ if __name__ == "__main__":
     # log GPU
     print(f"Reserved memory after init: {torch.cuda.memory_reserved() / 1e9} GB")
 
-    hmm_wrapper.train(save_flag=args.save)
+    hmm_wrapper.train(save_flag=args.save, save_freq=args.save_epoch_freq)
 
     # post-training
     end_time = time.time()

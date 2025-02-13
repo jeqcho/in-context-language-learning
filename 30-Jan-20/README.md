@@ -475,3 +475,65 @@ Double check that no testing gives the same loss. Then try to optimize testing w
 - I will sbatch another pair and see if the diff is significant.
 
 Also will sbatch a large run to scan over update_freq. Sent.
+
+# Feb 11
+
+Changing test frequency does change the exact loss. Let's try to see if this is a bug.
+
+I don't think setting inference_mode will solve this bug, since we don't use gradients anyways. Let's see what `from_summaries` does. Is it affected by `predict_proba`?
+
+Pretty much so. It calls `forward_backward` under the hood.
+
+Idea: clear the things set by `forward_backward` after we eval. This is similar to how if we run `from_summaries` twice consecutively, there will be nan. Let's check `from_summaries`.
+
+It seems that this is achieved with `reset_cache`.
+
+Let me run a run that only does a test after 20 epochs, and compare that to one that tests every epoch but uses `reset_cache`. It is hoped that they will agree on epoch 20.
+
+Note, if we use E-100 and B-1024, there's 72.7 batches per epoch.
+
+The `reset_cache` doesn't look too promising, since its trajectory is similar to one without `reset_cache`. Hmm, I take that back. What matters is actually the std.
+
+TODO: check if the "more frequent updates lead to faster convergence but same terminal loss" phenomena holds in higher H and E.
+
+TODO: use the more frequest updates optimization to train bigger H and E.
+
+Surprisingly, the std doesn't match between the `reset_cache` and the one reported after 20 epochs.
+
+TODO: check the reset cache test every 2 epoch vs reset cache every 1 epoch.
+
+# Feb 12
+
+There's a diff in std between heck the reset cache test every 2 epoch vs reset cache every 1 epoch, so reset_cache didn't achieve what we have hoped.
+
+Another experiment: run a run with very minimal training vs very minimal training + extensive test, and see if their test loss differs. If not, then it is probably safe.
+
+It doesn't seem like testing should affect the training, since `forward_backward` doesn't set the internals.
+
+Ignore the discrepancy for now.
+
+Scan update_freq for H-500 E-200. First I scan for batch_size.
+
+Maximized for H-500
+EMISSIONS=(100 200 300 400 500)
+BATCH_SIZES=(256 256 256 256 256)
+
+# Feb 13
+
+Experiments yesterday suggest that higher `update_freq` learns the global minimum by converging below that of lower `update_freq`, but also comes at converging slower.
+
+There is also evidence of a phase transition in switching of the local minimum to the global minimum by varying batch sizes (batch sizes are essentially `update_freq`).
+
+It will be interesting to see if `H-500-E-200` with `update_freq-all` will plateau at the same loss with `update_freq-8,16,32` or if it will go below it.
+
+Will schedule a 24h to pick up from the 10 h mark.
+
+First, the model saved should have the epoch of that save in the filename, instead of the max epoch desired.
+
+Let me edit the file name for the model manually first.
+
+It turns out we didn't save it, because it only gets saved after all epochs are run.
+
+This also means that the file names are all correct.
+
+I will edit the code to introduce checkpointing every x epochs.

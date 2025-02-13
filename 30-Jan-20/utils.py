@@ -14,7 +14,6 @@ from torch.utils.data import TensorDataset, DataLoader
 from tqdm import tqdm
 import wandb
 from HMMArgs import HMMArgs
-import itertools
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -96,6 +95,7 @@ class HMMWrapper:
             return torch.tensor(best_state_of)
         return emissions.apply_(lambda emission: best_state_of[emission])
 
+    @torch.inference_mode()
     def get_final_token_cross_entropy(
         self, batch: Int[torch.Tensor, "batch seq_len emission_dim"]
     ) -> Float[torch.Tensor, "batch n_emissions"]:
@@ -160,6 +160,7 @@ class HMMWrapper:
         # calculate the cross-entropy
         return torch.nn.functional.cross_entropy(next_emission, final_tokens)
 
+    @torch.inference_mode()
     def get_final_token_statistics(self, unique=False) -> Tuple[float, float]:
         test_loader, total_len = get_test_loader(self.hmm_args, unique)
         pbar = tqdm(total=total_len)
@@ -173,7 +174,7 @@ class HMMWrapper:
         ce_list = torch.tensor(ce_list)
         return ce_list.mean().item(), ce_list.std().item()
 
-    def train(self, save_flag=True):
+    def train(self, save_flag=True, save_freq=10):
         # set up wandb
         wandb.init(project="in-context-language-learning", name=self.hmm_args.__str__())
 
@@ -182,9 +183,9 @@ class HMMWrapper:
         print(f"Allocated memory after getting train loader: {torch.cuda.memory_allocated() / 1e9} GB")
         print(f"Reserved memory after getting train loader: {torch.cuda.memory_reserved() / 1e9} GB")
         dirty_flag = False
-        for i in range(self.hmm_args.num_epoch):
-            print(f"Begin training for epoch {i+1}")
-            pbar = tqdm(total=total_len, desc=f"Epoch {i+1}")
+        for epoch_index in range(self.hmm_args.num_epoch):
+            print(f"Begin training for epoch {epoch_index+1}")
+            pbar = tqdm(total=total_len, desc=f"Epoch {epoch_index+1}")
             for idx, (batch, _) in enumerate(train_loader):
                 batch = batch.to(device)
                 self.tokens_seen += batch.numel()
@@ -197,24 +198,20 @@ class HMMWrapper:
                         dirty_flag = False
 
                 pbar.update(batch.shape[0])
-            if dirty_flag or self.hmm_args.update_freq == "all":
+            if dirty_flag:
                 self.model.from_summaries()
             print(f"Allocated memory after this epoch: {torch.cuda.memory_allocated() / 1e9} GB")
             print(f"Reserved memory after this epoch: {torch.cuda.memory_reserved() / 1e9} GB")
             pbar.close()
-            print(f"Training complete for epoch {i+1}!")
-            print(f"Begin testing for epoch {i+1}")
+            print(f"Training complete for epoch {epoch_index+1}!")
+            print(f"Begin testing for epoch {epoch_index+1}")
 
             # testing
-            if i % 2 == 0:
-                # checking if testing affects weights
-                # to be removed
-                continue
-            print(f"Begin testing on duplicated sequences for epoch {i+1}")
+            print(f"Begin testing on duplicated sequences for epoch {epoch_index+1}")
             ce_loss, ce_std = self.get_final_token_statistics()
-            print(f"Begin testing on unique sequences for epoch {i+1}")
+            print(f"Begin testing on unique sequences for epoch {epoch_index+1}")
             ce_loss_uniq, ce_std_uniq = self.get_final_token_statistics(unique=True)
-            print(f"Testing complete for epoch {i+1}!")
+            print(f"Testing complete for epoch {epoch_index+1}!")
 
             # logging
             wandb.log(
@@ -224,19 +221,20 @@ class HMMWrapper:
                     "test-loss-unique": ce_loss_uniq,
                     "test-std-unique": ce_std_uniq,
                     "tokens-seen": self.tokens_seen,
+                    "epoch": epoch_index + 1,
                 },
-                step=i,
+                step=epoch_index,
+                commit=True,
             )
-            print(f"Epoch {i+1} is complete!")
+            print(f"Epoch {epoch_index+1} is complete!")
+
+            # save model
+            if save_flag and ((epoch_index + 1) % save_freq == 0):
+                print(f"Saving the model...")
+                torch.save(self.model, self.hmm_args.epoch_stamped_filename(epoch_index + 1))
+                print(f"Model saved!")
 
         wandb.finish()
-
-        # save model
-        if save_flag:
-            # t.save(model, hmm_args.model_filename[:-4]+"fit.pkl")
-            print(f"Saving the model...")
-            torch.save(self.model, self.hmm_args.model_filename)
-            print(f"Model saved!")
 
 
 def compare_word_lists(word_list_1: List[str], word_list_2: List[str]) -> None:
