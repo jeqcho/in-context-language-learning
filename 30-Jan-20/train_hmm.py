@@ -50,10 +50,10 @@ if __name__ == "__main__":
     else:
         assert args.update_freq > 0
 
-    if args.no_save is None:
-        assert args.save_epoch_freq is not None
-    else:
+    if args.no_save:
         assert args.save_epoch_freq is None
+    else:
+        assert args.save_epoch_freq is not None
 
     # init params
     hmm_args = HMMArgs(

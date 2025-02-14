@@ -537,3 +537,7 @@ It turns out we didn't save it, because it only gets saved after all epochs are 
 This also means that the file names are all correct.
 
 I will edit the code to introduce checkpointing every x epochs.
+
+# Feb 14
+
+Idea: add time tracking for save and for a general epoch.

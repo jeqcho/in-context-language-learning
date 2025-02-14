@@ -14,6 +14,7 @@ from torch.utils.data import TensorDataset, DataLoader
 from tqdm import tqdm
 import wandb
 from HMMArgs import HMMArgs
+import time
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -56,6 +57,27 @@ class Tokenizer:
                 str_sentence += self.detokenizer[token] + " "
             str_sentences.append(str_sentence.strip())
         return str_sentences
+
+
+class TimeTracker:
+    start: float
+
+    def __init__(self):
+        self.start = time.time()
+
+    def stop(self) -> str:
+        """
+        Returns time taken in zero-padded HH:MM:SS.SSS
+        """
+        now = time.time()
+        elapsed_time = now - self.start
+        return self.format_time(elapsed_time)
+
+    @staticmethod
+    def format_time(seconds: float) -> str:
+        hours, remainder = divmod(seconds, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        return f"{int(hours):02}:{int(minutes):02}:{seconds:06.3f}"  # HH:MM:SS.SSS
 
 
 class HMMWrapper:
@@ -185,6 +207,7 @@ class HMMWrapper:
         dirty_flag = False
         for epoch_index in range(self.hmm_args.num_epoch):
             print(f"Begin training for epoch {epoch_index+1}")
+            epoch_time_tracker = TimeTracker()
             pbar = tqdm(total=total_len, desc=f"Epoch {epoch_index+1}")
             for idx, (batch, _) in enumerate(train_loader):
                 batch = batch.to(device)
@@ -231,8 +254,12 @@ class HMMWrapper:
             # save model
             if save_flag and ((epoch_index + 1) % save_freq == 0):
                 print(f"Saving the model...")
+                save_time_tracker = TimeTracker()
                 torch.save(self.model, self.hmm_args.epoch_stamped_filename(epoch_index + 1))
+                print(f"Time taken to save model: {save_time_tracker.stop()}")
                 print(f"Model saved!")
+
+            print(f"Time taken for epoch {epoch_index+1}: {epoch_time_tracker.stop()}")
 
         wandb.finish()
 
