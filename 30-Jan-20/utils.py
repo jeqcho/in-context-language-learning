@@ -64,14 +64,20 @@ class TimeTracker:
 
     def __init__(self):
         self.start = time.time()
+    
+    def seconds_elapsed(self) -> int:
+        """
+        Returns time taken in integer seconds
+        """
+        now = time.time()
+        elapsed_time = int(now - self.start)
+        return elapsed_time
 
     def stop(self) -> str:
         """
         Returns time taken in zero-padded HH:MM:SS.SSS
         """
-        now = time.time()
-        elapsed_time = now - self.start
-        return self.format_time(elapsed_time)
+        return self.format_time(self.seconds_elapsed())
 
     @staticmethod
     def format_time(seconds: float) -> str:
@@ -236,20 +242,6 @@ class HMMWrapper:
             ce_loss_uniq, ce_std_uniq = self.get_final_token_statistics(unique=True)
             print(f"Testing complete for epoch {epoch_index+1}!")
 
-            # logging
-            wandb.log(
-                {
-                    "test-loss": ce_loss,
-                    "test-std": ce_std,
-                    "test-loss-unique": ce_loss_uniq,
-                    "test-std-unique": ce_std_uniq,
-                    "tokens-seen": self.tokens_seen,
-                    "epoch": epoch_index + 1,
-                },
-                step=epoch_index,
-                commit=True,
-            )
-            print(f"Epoch {epoch_index+1} is complete!")
 
             # save model
             if save_flag and ((epoch_index + 1) % save_freq == 0):
@@ -259,7 +251,22 @@ class HMMWrapper:
                 print(f"Time taken to save model: {save_time_tracker.stop()}")
                 print(f"Model saved!")
 
+            # logging
+            wandb.log(
+                {
+                    "test-loss": ce_loss,
+                    "test-std": ce_std,
+                    "test-loss-unique": ce_loss_uniq,
+                    "test-std-unique": ce_std_uniq,
+                    "tokens-seen": self.tokens_seen,
+                    "time-epoch-s": epoch_time_tracker.seconds_elapsed(),
+                    "epoch": epoch_index + 1,
+                },
+                step=epoch_index,
+                commit=True,
+            )
             print(f"Time taken for epoch {epoch_index+1}: {epoch_time_tracker.stop()}")
+            print(f"Epoch {epoch_index+1} is complete!")
 
         wandb.finish()
 

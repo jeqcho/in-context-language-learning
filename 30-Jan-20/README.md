@@ -540,4 +540,4 @@ I will edit the code to introduce checkpointing every x epochs.
 
 # Feb 14
 
-Idea: add time tracking for save and for a general epoch.
+Idea: add time tracking for save and for a general epoch. Done.
