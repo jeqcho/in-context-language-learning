@@ -14,7 +14,15 @@ from jaxtyping import Float
 # %%
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-hmm_args = HMMArgs(num_states=500, num_emissions=200, seq_length=100, batch_size=256, num_epoch=20, unique=False, update_freq="all")
+hmm_args = HMMArgs(
+    num_states=500,
+    num_emissions=200,
+    seq_length=100,
+    batch_size=256,
+    num_epoch=20,
+    unique=False,
+    update_freq="all",
+)
 
 # load model
 model_filename = hmm_args.epoch_stamped_filename(hmm_args.num_epoch)
@@ -54,24 +62,15 @@ tokenized_sentences = tokenized_sentences.unsqueeze(-1)
 assert tokenized_sentences.ndim == 3
 
 # %%
-emission_log_probs: Float[torch.Tensor, "batch seq_len n_hidden"] = model._emission_matrix(tokenized_sentences)
+emission_log_probs: Float[torch.Tensor, "batch seq_len n_hidden"] = (
+    model._emission_matrix(tokenized_sentences)
+)
 
-prediction_log_probs: Float[torch.Tensor, "batch seq_len n_hidden"] = model.predict_log_proba(tokenized_sentences)
+prediction_log_probs: Float[torch.Tensor, "batch seq_len n_hidden"] = (
+    model.predict_log_proba(tokenized_sentences)
+)
 
-#%%
-
-
-#%%
-# get the probabilities if we don't look at the whole sequence
-# get the argmax
-# predicted_states_no_peek = emission_log_probs.argmax(-1).cpu()
-
-# # get the expected predicted state
-# expected_predicted_states = hmm_wrapper.get_best_state_for_emission(tokenized_sentences)
-
-# print(compare_tensors(predicted_states_no_peek, expected_predicted_states))
-
-#%%
+# %%
 # get the predicted hidden states using all of the sequence
 predicted_states = prediction_log_probs.argmax(-1).cpu()
 print(f"{predicted_states.shape=}")
@@ -81,12 +80,16 @@ distributions = [hmm_wrapper.get_distributions_for_seq(seq) for seq in predicted
 
 predicted_emission_distributions = torch.tensor(distributions, dtype=torch.float)
 print(f"{predicted_emission_distributions.shape=}")
-assert predicted_emission_distributions.shape == (len(seqs), hmm_args.seq_length, hmm_args.num_emissions)
+assert predicted_emission_distributions.shape == (
+    len(seqs),
+    hmm_args.seq_length,
+    hmm_args.num_emissions,
+)
 
-#%%
+# %%
 predicted_emissions = predicted_emission_distributions.argmax(-1)
 
 predicted_emissions_str = tokenizer.detokenize_batch(predicted_emissions)
 for idx, sentence in enumerate(predicted_emissions_str):
     compare_sentences(seqs[idx], sentence)
-#%%
+# %%

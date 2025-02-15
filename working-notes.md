@@ -590,4 +590,16 @@ number of layers matter more than number of heads.
 
 https://github.com/johnathansun/icll-models
 
+## Today notes
+
 Let me begin by verifying that the model outputs are reasonable. Indeed, they are very much reasonable (see `reasonable.txt`).
+
+Now we can work on getting the Llama set up. That can inform whether we want to use integer or strings for our synthetic data.
+
+I copied over code from Johnathan's repo ([link](https://github.com/johnathansun/icll-models)) and put it in `llm/`. Ran it and it is successful without errors for one GPU.
+
+Submitted another run for 2 GPUs. Somehow 4 GPUs gave this error: `sbatch: error: Batch job submission failed: Requested node configuration is not available`.
+
+2 GPUs are ok. I am not sure whether it is faster.
+
+The main tasks from now is to understand the code by going through it and customize it to my purpose.
