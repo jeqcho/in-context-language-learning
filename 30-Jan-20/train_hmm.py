@@ -42,6 +42,7 @@ if __name__ == "__main__":
         help="Save the model at that epoch frequency. If save_epoch_freq=5, save model after 5 epochs of training.",
     )
     parser.add_argument("--no_save", action="store_true", help="Do not save the model")
+    parser.add_argument("--load_model_with_epoch", type=int, help="Load the model from file.")
 
     args = parser.parse_args()
     args.save = not args.no_save
@@ -68,7 +69,10 @@ if __name__ == "__main__":
 
     # init model
     start_time = time.time()
-    model = init_model(hmm_args).to(device)
+    if args.load_model_with_epoch is None:
+        model = init_model(hmm_args).to(device)
+    else:
+        model = load_model(hmm_args, args.load_model_with_epoch)
     hmm_wrapper = HMMWrapper(model, hmm_args)
 
     # log GPU

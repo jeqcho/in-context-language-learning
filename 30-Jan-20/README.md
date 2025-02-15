@@ -504,7 +504,7 @@ TODO: check the reset cache test every 2 epoch vs reset cache every 1 epoch.
 
 # Feb 12
 
-There's a diff in std between heck the reset cache test every 2 epoch vs reset cache every 1 epoch, so reset_cache didn't achieve what we have hoped.
+There's a diff in std between the reset cache test every 2 epoch vs reset cache every 1 epoch, so reset_cache didn't achieve what we have hoped.
 
 Another experiment: run a run with very minimal training vs very minimal training + extensive test, and see if their test loss differs. If not, then it is probably safe.
 
@@ -541,3 +541,53 @@ I will edit the code to introduce checkpointing every x epochs.
 # Feb 14
 
 Idea: add time tracking for save and for a general epoch. Done.
+
+Sanity check the outputs.
+
+Get back to building strategy KL divergences.
+
+Now build tools to run from a saved model.
+
+# Feb 15
+
+Copying over notes from the meeting with Eran
+
+### Updates
+
+update_freq and the theory of global vs local learning. (bigger batch size means converge slower, but converge at lower loss).
+
+- Phase transition of test loss using batch sizes
+
+### Feedback
+
+Are the outputs reasonable?
+
+Why more hidden states than emission states work?
+
+Might be more natural to use same number of hidden states. Or more emission states than hidden states.
+
+Now focus on creating the synthetic data.
+
+- Keep the transition matrix but vary the emission probabilities.
+
+### Johnathan
+
+Train script can cut.
+
+Moved from GPT-2 to Llama becuase GPT-2 only uses absolute positioning.
+
+HF implementation of Llama model.
+
+Johnathan used a 10M transformer for 50 emissions.
+
+- success if the transfomer has the transitionary loss for the bigrams.
+
+He used the stationary distribution of Markov chains to generate the starting tokens.
+
+d = 768
+
+number of layers matter more than number of heads.
+
+https://github.com/johnathansun/icll-models
+
+Let me begin by verifying that the model outputs are reasonable. Indeed, they are very much reasonable (see `reasonable.txt`).

@@ -64,7 +64,7 @@ class TimeTracker:
 
     def __init__(self):
         self.start = time.time()
-    
+
     def seconds_elapsed(self) -> int:
         """
         Returns time taken in integer seconds
@@ -202,7 +202,7 @@ class HMMWrapper:
         ce_list = torch.tensor(ce_list)
         return ce_list.mean().item(), ce_list.std().item()
 
-    def train(self, save_flag=True, save_freq=10):
+    def train(self, save_flag=True, save_freq=10, starting_epoch=0):
         # set up wandb
         wandb.init(project="in-context-language-learning", name=self.hmm_args.__str__())
 
@@ -211,7 +211,7 @@ class HMMWrapper:
         print(f"Allocated memory after getting train loader: {torch.cuda.memory_allocated() / 1e9} GB")
         print(f"Reserved memory after getting train loader: {torch.cuda.memory_reserved() / 1e9} GB")
         dirty_flag = False
-        for epoch_index in range(self.hmm_args.num_epoch):
+        for epoch_index in range(starting_epoch, self.hmm_args.num_epoch):
             print(f"Begin training for epoch {epoch_index+1}")
             epoch_time_tracker = TimeTracker()
             pbar = tqdm(total=total_len, desc=f"Epoch {epoch_index+1}")
@@ -241,7 +241,6 @@ class HMMWrapper:
             print(f"Begin testing on unique sequences for epoch {epoch_index+1}")
             ce_loss_uniq, ce_std_uniq = self.get_final_token_statistics(unique=True)
             print(f"Testing complete for epoch {epoch_index+1}!")
-
 
             # save model
             if save_flag and ((epoch_index + 1) % save_freq == 0):
@@ -373,4 +372,9 @@ def init_model(hmm_args: HMMArgs) -> DenseHMM:
     ends = torch.full(size=(hmm_args.num_states,), fill_value=1.0 / hmm_args.num_states).tolist()
 
     model = DenseHMM(hidden_states, edges=edges, starts=starts, ends=ends, verbose=False)
+    return model
+
+
+def load_model(hmm_args: HMMArgs, epoch_on_filename: int) -> DenseHMM:
+    model = torch.load(hmm_args.epoch_stamped_filename(epoch_on_filename))
     return model

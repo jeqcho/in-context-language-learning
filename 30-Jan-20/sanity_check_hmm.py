@@ -14,12 +14,13 @@ from jaxtyping import Float
 # %%
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-hmm_args = HMMArgs(num_emissions=100, num_states=100, seq_length=100, batch_size=256, num_epoch=10)
+hmm_args = HMMArgs(num_states=500, num_emissions=200, seq_length=100, batch_size=256, num_epoch=20, unique=False, update_freq="all")
 
 # load model
-print(f"Loading model from {hmm_args.model_filename}")
+model_filename = hmm_args.epoch_stamped_filename(hmm_args.num_epoch)
+print(f"Loading model from {model_filename}")
 
-model = torch.load(hmm_args.model_filename).to(device)
+model = torch.load(model_filename).to(device)
 hmm_wrapper = HMMWrapper(model, hmm_args)
 
 # load sample sentences
