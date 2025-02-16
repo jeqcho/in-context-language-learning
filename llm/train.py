@@ -70,8 +70,9 @@ class Trainer:
 
     def _unpack_dict(self, d):
         """Unpack config dictionary into attributes."""
-        for section in d.values():
-            for key, value in section.items():
+        # d can be either a dict or a Run. Run have keys() but not values()
+        for section_key in d.keys():
+            for key, value in d[section_key].items():
                 setattr(self, key, value)
 
     def save_checkpoint(self, final=False):
@@ -271,11 +272,11 @@ class Trainer:
         # Determine the evaluation range dynamically
         eval_states = list(range(3, 81, 5))  # Dynamically generated [3, 5, 10, ..., 80]
 
-        for step in range(self.steps + 1):
+        for _ in range(self.steps + 1):
             to_log = self.train_step()  # Perform training step
 
             # Ensure only rank 0 performs evaluation
-            if is_main_process and step % self.eval_interval == 0:
+            if is_main_process and self.iters % self.eval_interval == 0:
                 for num_states in eval_states:
                     eval_loss, to_log = self.eval_step(
                         to_log, num_states, evaluators=True, zipfian=False
@@ -283,13 +284,13 @@ class Trainer:
                     self.eval_loss.append(eval_loss.detach().cpu().numpy())
 
             # Checkpointing at intervals
-            if is_main_process and step % self.save_interval == 0:
+            if is_main_process and self.iters % self.save_interval == 0:
                 self.save_checkpoint()
 
             # Logging metrics
             if is_main_process:
-                if step % self.print_interval == 0:
-                    print(f"Step {step} completed")
+                if self.iters % self.print_interval == 0:
+                    print(f"Step {self.iters} completed")
                 if wandb.run is not None:
                     wandb.log(to_log)
 

@@ -605,3 +605,5 @@ Submitted another run for 2 GPUs. Somehow 4 GPUs gave this error: `sbatch: error
 The main tasks from now is to understand the code by going through it and customize it to my purpose.
 
 # Feb 16
+
+Refactored `train.py`.
