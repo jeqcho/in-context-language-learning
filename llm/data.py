@@ -2,10 +2,13 @@
 import numpy as np
 import torch as t
 from random import choices, sample
-device = t.device('cuda' if t.cuda.is_available() else 'cpu')
+
+device = t.device("cuda" if t.cuda.is_available() else "cpu")
 from tqdm import tqdm
 from torch.utils.data import IterableDataset, DataLoader
+
 # from utils import zipf_dist
+
 
 def zipf(x, alpha=1):
     return (x + 2.7) ** (-alpha)
@@ -17,11 +20,11 @@ def zipf_dist(n, alpha=1):
 
 
 def stationary_dist(prob):
-  evals, evecs = np.linalg.eig(prob.T)
-  evec1 = evecs[:,np.isclose(evals, 1)]
-  evec1 = evec1[:,0]
-  stationary = evec1 / evec1.sum()
-  return stationary.real
+    evals, evecs = np.linalg.eig(prob.T)
+    evec1 = evecs[:, np.isclose(evals, 1)]
+    evec1 = evec1[:, 0]
+    stationary = evec1 / evec1.sum()
+    return stationary.real
 
 
 def batched_stationary_dist(probs):
@@ -44,7 +47,9 @@ def batched_sinkhorn_knopp(matrices, max_iter=150, tol=1e-9, cropped=False):
         if cropped:
             col_sums[col_sums == 0] = 1
         A /= col_sums
-        if np.allclose(A.sum(axis=2), 1, atol=tol) and np.allclose(A.sum(axis=1), 1, atol=tol):
+        if np.allclose(A.sum(axis=2), 1, atol=tol) and np.allclose(
+            A.sum(axis=1), 1, atol=tol
+        ):
             break
     row_sums = A.sum(axis=2, keepdims=True)
     if cropped:
@@ -61,7 +66,7 @@ def batched_multinomial(probs):
 
 
 def get_random_state_tm(batch_size, min_states, max_states):
-    num_states = np.random.randint(min_states, max_states+1, size=batch_size)
+    num_states = np.random.randint(min_states, max_states + 1, size=batch_size)
     # range_states = np.arange(min_states, max_states+1)
     # dist = zipf_dist(max_states - min_states + 1, alpha=1/3)
     # num_states = np.random.choice(range_states, size=batch_size, p=dist)
@@ -89,7 +94,7 @@ def adjust_tm(P, pi_target, num_states, learning_rate=0.01, max_iters=1000, tol=
             for j in range(num_states):
                 if pi_current[i] > 0:
                     P[i, j] += adjustment[j] / pi_current[i]
-        
+
         # Normalize to ensure rows sum to 1
         P = np.maximum(P, 0)
         P /= P.sum(axis=1, keepdims=True)
@@ -100,33 +105,54 @@ def adjust_tm(P, pi_target, num_states, learning_rate=0.01, max_iters=1000, tol=
     return P
 
 
-def batch_adjust_tm(P_batch, pi_target, num_states, learning_rate=0.01, max_iters=1000, tol=1e-6):
+def batch_adjust_tm(
+    P_batch, pi_target, num_states, learning_rate=0.01, max_iters=1000, tol=1e-6
+):
     P_batch = P_batch.copy()
-    return np.stack([adjust_tm(P_batch[i], pi_target, num_states, learning_rate, max_iters, tol) for i in range(P_batch.shape[0])])
+    return np.stack(
+        [
+            adjust_tm(P_batch[i], pi_target, num_states, learning_rate, max_iters, tol)
+            for i in range(P_batch.shape[0])
+        ]
+    )
 
 
-def generate_batch(batch_size, 
-                   lang_size,
-                   length, 
-                   num_symbols, 
-                   random_symbols=False, 
-                   low_symbols=None, 
-                   high_symbols=None, 
-                   random_selection=False, 
-                   low_idx=None, 
-                   high_idx=None, 
-                   doubly_stochastic=False, 
-                   zipfian=False,
-                   eval=False):
+def generate_batch(
+    batch_size,
+    lang_size,
+    length,
+    num_symbols,
+    random_symbols=False,
+    low_symbols=None,
+    high_symbols=None,
+    random_selection=False,
+    low_idx=None,
+    high_idx=None,
+    doubly_stochastic=False,
+    zipfian=False,
+    eval=False,
+):
     if random_symbols:
-        assert low_symbols is not None, 'low_symbols must be provided for random symbols'
-        assert high_symbols is not None, 'high_symbols must be provided for random symbols'
+        assert (
+            low_symbols is not None
+        ), "low_symbols must be provided for random symbols"
+        assert (
+            high_symbols is not None
+        ), "high_symbols must be provided for random symbols"
         tm, num_states = get_random_state_tm(lang_size, low_symbols, high_symbols)
         num_symbols = high_symbols
     else:
-        tm = np.random.dirichlet(np.ones(num_symbols), size=(lang_size, num_symbols, ))
+        tm = np.random.dirichlet(
+            np.ones(num_symbols),
+            size=(
+                lang_size,
+                num_symbols,
+            ),
+        )
     if zipfian:
-        tm = batch_adjust_tm(tm, zipf_dist(num_symbols), num_symbols, learning_rate=0.01, max_iters=10000)
+        tm = batch_adjust_tm(
+            tm, zipf_dist(num_symbols), num_symbols, learning_rate=0.01, max_iters=10000
+        )
     if doubly_stochastic:
         tm = batched_sinkhorn_knopp(tm, cropped=random_symbols)
 
@@ -144,41 +170,50 @@ def generate_batch(batch_size,
     states = np.stack(states, axis=1)
 
     if random_selection:
-        assert low_idx is not None, 'low_idx must be provided for random selection'
-        assert high_idx is not None, 'high_idx must be provided for random selection'
+        assert low_idx is not None, "low_idx must be provided for random selection"
+        assert high_idx is not None, "high_idx must be provided for random selection"
 
         # sample without replacement num_symbols from low_idx to high_idx
         r = np.arange(low_idx, high_idx)
-        idxs = np.array([np.random.choice(r, num_symbols, replace=False) for _ in range(batch_size)])
+        idxs = np.array(
+            [np.random.choice(r, num_symbols, replace=False) for _ in range(batch_size)]
+        )
         dict_lst = [dict(zip(range(num_symbols), idxs[i])) for i in range(batch_size)]
-        
+
         # efficiently replace the states with dict values
         max_key = max(max(d.keys()) for d in dict_lst)
-        value_maps = np.array([np.array([d.get(i, -1) for i in range(max_key + 1)]) for d in dict_lst])
-        states_tokens = np.take_along_axis(value_maps[:, None, :], states[:, :, None], axis=2).squeeze(-1)
+        value_maps = np.array(
+            [np.array([d.get(i, -1) for i in range(max_key + 1)]) for d in dict_lst]
+        )
+        states_tokens = np.take_along_axis(
+            value_maps[:, None, :], states[:, :, None], axis=2
+        ).squeeze(-1)
     else:
         states_tokens = states
-        idxs = np.tile(np.arange(0, num_symbols), batch_size).reshape(batch_size, num_symbols)
+        idxs = np.tile(np.arange(0, num_symbols), batch_size).reshape(
+            batch_size, num_symbols
+        )
 
     if eval:
         return t.tensor(states_tokens), t.tensor(states), t.tensor(tm), t.tensor(idxs)
     else:
         return t.tensor(states_tokens)
 
+
 # %%
 
 # for i in tqdm(range(1000)):
-#     x_t, x_idx, tm, idxs = generate_batch(batch_size=128, 
+#     x_t, x_idx, tm, idxs = generate_batch(batch_size=128,
 #                     lang_size=16,
-#                     length=100, 
-#                     num_symbols=35, 
-#                     random_symbols=False, 
-#                     low_symbols=None, 
-#                     high_symbols=None, 
-#                     random_selection=False, 
-#                     low_idx=None, 
-#                     high_idx=None, 
-#                     doubly_stochastic=False, 
+#                     length=100,
+#                     num_symbols=35,
+#                     random_symbols=False,
+#                     low_symbols=None,
+#                     high_symbols=None,
+#                     random_selection=False,
+#                     low_idx=None,
+#                     high_idx=None,
+#                     doubly_stochastic=False,
 #                     zipfian=True,
 #                     eval=True)
 
@@ -201,12 +236,12 @@ def generate_batch(batch_size,
 #     def __iter__(self):
 #         while True:
 #             yield generate_batch(
-#                 self.batch_size, 
-#                 self.num_symbols, 
-#                 self.length, 
-#                 self.random_selection, 
-#                 self.low_idx, 
-#                 self.high_idx, 
+#                 self.batch_size,
+#                 self.num_symbols,
+#                 self.length,
+#                 self.random_selection,
+#                 self.low_idx,
+#                 self.high_idx,
 #                 self.doubly_stochastic,
 #                 self.eval
 #             )

@@ -7,8 +7,6 @@ import torch as t
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.distributed as dist
-import torch.multiprocessing as mp
-from tqdm import tqdm
 from torch.optim.lr_scheduler import LinearLR
 from torch.nn.parallel import DistributedDataParallel as DDP
 import wandb
