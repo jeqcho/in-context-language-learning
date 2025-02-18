@@ -607,3 +607,16 @@ The main tasks from now is to understand the code by going through it and custom
 # Feb 16
 
 Refactored `train.py`.
+
+# Feb 17
+
+Refactored `llama.py`, `eval.py` and `data.py`.
+
+# Feb 18
+
+Create the dataset using the HMMs. Run it.
+Whether we need string tokens or integer tokens. Integers.
+
+Sbatched a H-500-E-100.
+
+Trying to run the data generation, but there's an error saying the model is still on the gpu.

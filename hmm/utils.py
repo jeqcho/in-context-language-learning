@@ -13,7 +13,7 @@ from pomegranate.hmm import DenseHMM
 from torch.utils.data import TensorDataset, DataLoader
 from tqdm import tqdm
 import wandb
-from HMMArgs import HMMArgs
+from hmm.HMMArgs import HMMArgs
 import time
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -29,25 +29,35 @@ class Tokenizer:
             self.detokenizer[token] = string
 
     def tokenize_sentence(self, str_sentence: str) -> Int[torch.Tensor, "seq_len"]:
-        tokenized_sentence = [int(self.tokenizer[word]) for word in str_sentence.split(" ")]
+        tokenized_sentence = [
+            int(self.tokenizer[word]) for word in str_sentence.split(" ")
+        ]
         return torch.tensor(tokenized_sentence, dtype=torch.int)
 
-    def tokenize_batch(self, str_sentences: List[str]) -> Int[torch.Tensor, "batch seq_len"]:
+    def tokenize_batch(
+        self, str_sentences: List[str]
+    ) -> Int[torch.Tensor, "batch seq_len"]:
         batch_size = len(str_sentences)
         tokenized_sentences = []
         for i in range(batch_size):
-            tokenized_sentence = [int(self.tokenizer[word]) for word in str_sentences[i].split(" ")]
+            tokenized_sentence = [
+                int(self.tokenizer[word]) for word in str_sentences[i].split(" ")
+            ]
             tokenized_sentences.append(tokenized_sentence)
         return torch.tensor(tokenized_sentences, dtype=torch.int)
 
-    def detokenize_sentence(self, tokenized_sentence: Int[torch.Tensor, "seq_len"]) -> str:
+    def detokenize_sentence(
+        self, tokenized_sentence: Int[torch.Tensor, "seq_len"]
+    ) -> str:
         assert tokenized_sentence.device.type == "cpu"
         str_sentence = ""
         for token in tokenized_sentence:
             str_sentence += self.detokenizer[token] + " "
         return str_sentence.strip()
 
-    def detokenize_batch(self, tokenized_sentences: Int[torch.Tensor, "seq_len"]) -> List[str]:
+    def detokenize_batch(
+        self, tokenized_sentences: Int[torch.Tensor, "seq_len"]
+    ) -> List[str]:
         assert tokenized_sentences.device.type == "cpu"
         batch_size = tokenized_sentences.shape[0]
         str_sentences: List[str] = []
@@ -158,7 +168,9 @@ class HMMWrapper:
         assert torch.allclose(transition_matrix.sum(-1), torch.tensor(1.0), atol=5e-2)
 
         # use the transition matrix to get a distribution for the next hidden state
-        next_state_prob = einops.einsum(hidden_state_prob, transition_matrix, "b s h1, h1 h2 -> b s h2")
+        next_state_prob = einops.einsum(
+            hidden_state_prob, transition_matrix, "b s h1, h1 h2 -> b s h2"
+        )
         # print(f"max diff from 1 for next_state_prob: {abs(next_state_prob.sum(-1)-1.0).max()}")
         assert torch.allclose(next_state_prob.sum(-1), torch.tensor(1.0))
 
@@ -167,13 +179,17 @@ class HMMWrapper:
         assert next_state_prob.shape == (b, h)
 
         # get the emisison matrix
-        emission_matrix = torch.tensor(self.get_distributions_for_seq(range(self.num_hidden)), device=device)
+        emission_matrix = torch.tensor(
+            self.get_distributions_for_seq(range(self.num_hidden)), device=device
+        )
         assert emission_matrix.shape == (h, e)
         # print(f"max diff from 1 for emission_matrix: {abs(emission_matrix.sum(-1)-1.0).max()}")
         assert torch.allclose(emission_matrix.sum(-1), torch.tensor(1.0))
 
         # use the emission matrix to get the probs for the next emission
-        next_emission = einops.einsum(next_state_prob, emission_matrix, "b h, h e -> b e")
+        next_emission = einops.einsum(
+            next_state_prob, emission_matrix, "b h, h e -> b e"
+        )
         assert next_emission.shape == (b, e)
         # print(f"max diff from 1 for next_emission: {abs(next_emission.sum(-1)-1.0).max()}")
         assert torch.allclose(next_emission.sum(-1), torch.tensor(1.0))
@@ -208,8 +224,12 @@ class HMMWrapper:
 
         # train model
         train_loader, total_len = get_train_loader(self.hmm_args)
-        print(f"Allocated memory after getting train loader: {torch.cuda.memory_allocated() / 1e9} GB")
-        print(f"Reserved memory after getting train loader: {torch.cuda.memory_reserved() / 1e9} GB")
+        print(
+            f"Allocated memory after getting train loader: {torch.cuda.memory_allocated() / 1e9} GB"
+        )
+        print(
+            f"Reserved memory after getting train loader: {torch.cuda.memory_reserved() / 1e9} GB"
+        )
         dirty_flag = False
         for epoch_index in range(starting_epoch, self.hmm_args.num_epoch):
             print(f"Begin training for epoch {epoch_index+1}")
@@ -229,8 +249,12 @@ class HMMWrapper:
                 pbar.update(batch.shape[0])
             if dirty_flag:
                 self.model.from_summaries()
-            print(f"Allocated memory after this epoch: {torch.cuda.memory_allocated() / 1e9} GB")
-            print(f"Reserved memory after this epoch: {torch.cuda.memory_reserved() / 1e9} GB")
+            print(
+                f"Allocated memory after this epoch: {torch.cuda.memory_allocated() / 1e9} GB"
+            )
+            print(
+                f"Reserved memory after this epoch: {torch.cuda.memory_reserved() / 1e9} GB"
+            )
             pbar.close()
             print(f"Training complete for epoch {epoch_index+1}!")
             print(f"Begin testing for epoch {epoch_index+1}")
@@ -246,7 +270,9 @@ class HMMWrapper:
             if save_flag and ((epoch_index + 1) % save_freq == 0):
                 print(f"Saving the model...")
                 save_time_tracker = TimeTracker()
-                torch.save(self.model, self.hmm_args.epoch_stamped_filename(epoch_index + 1))
+                torch.save(
+                    self.model, self.hmm_args.epoch_stamped_filename(epoch_index + 1)
+                )
                 print(f"Time taken to save model: {save_time_tracker.stop()}")
                 print(f"Model saved!")
 
@@ -323,8 +349,12 @@ def get_test_loader(hmm_args: HMMArgs, unique: bool = False) -> Tuple[Iterable, 
     # wrap each emission as 1d
     train_array = torch.unsqueeze(train_array, -1)
 
-    train_dataset = TensorDataset(train_array, torch.empty_like(train_array))  # labels are dummy tensors
-    return DataLoader(train_dataset, batch_size=hmm_args.batch_size, shuffle=True), len(train_dataset)
+    train_dataset = TensorDataset(
+        train_array, torch.empty_like(train_array)
+    )  # labels are dummy tensors
+    return DataLoader(train_dataset, batch_size=hmm_args.batch_size, shuffle=True), len(
+        train_dataset
+    )
 
 
 def get_train_loader(hmm_args: HMMArgs) -> Tuple[Iterable, int]:
@@ -353,9 +383,13 @@ def get_train_loader(hmm_args: HMMArgs) -> Tuple[Iterable, int]:
     # wrap each emission as 1d
     train_array = torch.unsqueeze(train_array, -1)
 
-    train_dataset = TensorDataset(train_array, torch.empty_like(train_array))  # labels are dummy tensors
+    train_dataset = TensorDataset(
+        train_array, torch.empty_like(train_array)
+    )  # labels are dummy tensors
 
-    return DataLoader(train_dataset, batch_size=hmm_args.batch_size, shuffle=True), len(train_dataset)
+    return DataLoader(train_dataset, batch_size=hmm_args.batch_size, shuffle=True), len(
+        train_dataset
+    )
 
 
 def init_model(hmm_args: HMMArgs) -> DenseHMM:
@@ -366,12 +400,19 @@ def init_model(hmm_args: HMMArgs) -> DenseHMM:
         dist = dist / dist.sum()
         hidden_states[i] = Categorical(torch.tensor(dist).tolist())
     edges = torch.full(
-        size=(hmm_args.num_states, hmm_args.num_states), fill_value=1.0 / hmm_args.num_states
+        size=(hmm_args.num_states, hmm_args.num_states),
+        fill_value=1.0 / hmm_args.num_states,
     ).tolist()
-    starts = torch.full(size=(hmm_args.num_states,), fill_value=1.0 / hmm_args.num_states).tolist()
-    ends = torch.full(size=(hmm_args.num_states,), fill_value=1.0 / hmm_args.num_states).tolist()
+    starts = torch.full(
+        size=(hmm_args.num_states,), fill_value=1.0 / hmm_args.num_states
+    ).tolist()
+    ends = torch.full(
+        size=(hmm_args.num_states,), fill_value=1.0 / hmm_args.num_states
+    ).tolist()
 
-    model = DenseHMM(hidden_states, edges=edges, starts=starts, ends=ends, verbose=False)
+    model = DenseHMM(
+        hidden_states, edges=edges, starts=starts, ends=ends, verbose=False
+    )
     return model
 
 

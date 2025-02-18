@@ -25,10 +25,10 @@ mamba activate olmo2
 PORT=25920
 
 torchrun --master_port=$PORT --nproc_per_node=1 ./train_hmm.py \
-    --num_emissions=200 \
+    --num_emissions=100 \
     --num_states=500 \
     --seq_length=100 \
     --batch_size=256 \
+    --update_freq=32 \
     --num_epoch=1000 \
-    --save_epoch_freq=5 \
-    --load_model_with_epoch=25
+    --save_epoch_freq=5
