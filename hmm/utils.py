@@ -13,7 +13,7 @@ from pomegranate.hmm import DenseHMM
 from torch.utils.data import TensorDataset, DataLoader
 from tqdm import tqdm
 import wandb
-from hmm.HMMArgs import HMMArgs
+from HMMArgs import HMMArgs
 import time
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

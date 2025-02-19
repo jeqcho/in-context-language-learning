@@ -5,7 +5,7 @@ Utility class to use HMMs to generate synthetic data for LLMs
 from typing import List
 import torch
 from dataclasses import dataclass
-from hmm.utils import HMMWrapper
+from utils import HMMWrapper
 from numpy.typing import NDArray
 import numpy as np
 import random
@@ -27,9 +27,22 @@ class DataGenerator:
         if self.permutate_emissions:
             # pomegranate uses ModuleList to store the emission probabilities
             random.shuffle(self.hmm_wrapper.model.distributions)  # type: ignore
-        
+
         # sampling in pomegranate requires the model to be on the cpu
         self.hmm_wrapper.model.cpu()
+
+    def generate_all(self, batch_size: int = 32) -> NDArray[np.int_]:
+        all_emission_tensors = []
+        while len(all_emission_tensors) < self.num_seq:
+
+            current_emission_tensors = self.hmm_wrapper.model.batched_sample(
+                n=batch_size
+            )
+            assert current_emission_tensors.shape == (batch_size, self.gen_seq_len)
+            all_emission_tensors.append(current_emission_tensors)
+        
+        all_emission_tensors = torch.concat(all_emission_tensors)
+        return all_emission_tensors.cpu().numpy()
 
     def generate_batch(self) -> NDArray[np.int_]:
         emission_tensors: List[torch.Tensor] = self.hmm_wrapper.model.sample(

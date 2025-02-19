@@ -620,3 +620,9 @@ Whether we need string tokens or integer tokens. Integers.
 Sbatched a H-500-E-100.
 
 Trying to run the data generation, but there's an error saying the model is still on the gpu.
+
+# Feb 19
+
+Keep a remote copy of pomegranate at [https://github.com/jeqcho/pomegranate](https://github.com/jeqcho/pomegranate).
+
+The error now: `TypeError: cannot assign 'torch.FloatTensor' as parameter 'emission_probs' (torch.nn.Parameter or None expected)`
