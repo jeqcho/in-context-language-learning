@@ -104,6 +104,9 @@ class HMMWrapper:
         self.hmm_args = hmm_args
         self.tokens_seen = 0
 
+    def __str__(self) -> str:
+        return self.hmm_args.__str__()
+
     def get_distributions_for_seq(self, seq):
         """
         Get the emission distribution for each predicted hidden state

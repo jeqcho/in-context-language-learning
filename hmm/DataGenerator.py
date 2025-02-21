@@ -5,6 +5,8 @@ Utility class to use HMMs to generate synthetic data for LLMs
 from typing import List
 import torch
 from dataclasses import dataclass
+
+from tqdm import tqdm
 from utils import HMMWrapper
 from numpy.typing import NDArray
 import numpy as np
@@ -33,15 +35,18 @@ class DataGenerator:
 
     def generate_all(self, batch_size: int = 32) -> NDArray[np.int_]:
         all_emission_tensors = []
-        while len(all_emission_tensors) < self.num_seq:
-
+        pbar = tqdm(total=self.num_seq)
+        while pbar.n < self.num_seq:
             current_emission_tensors = self.hmm_wrapper.model.batched_sample(
-                n=batch_size
+                batch_size=batch_size, seq_len=self.gen_seq_len
             )
             assert current_emission_tensors.shape == (batch_size, self.gen_seq_len)
             all_emission_tensors.append(current_emission_tensors)
-        
+            pbar.update(batch_size)
+
         all_emission_tensors = torch.concat(all_emission_tensors)
+        assert all_emission_tensors.ndim == 2
+        assert all_emission_tensors.shape[1] == self.gen_seq_len
         return all_emission_tensors.cpu().numpy()
 
     def generate_batch(self) -> NDArray[np.int_]:
