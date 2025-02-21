@@ -6,7 +6,7 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=16
 #SBATCH --gres=gpu:1
-#SBATCH --time=0-01:00
+#SBATCH --time=0-20:00
 #SBATCH --mem=250G
 #SBATCH --output=logs/generate-data-%A-%a.out
 #SBATCH --error=logs/generate-data-%A-%a.err
@@ -22,6 +22,6 @@ module load python
 # Activate conda environment (optional)
 mamba activate olmo2
 
-PORT=25920
+PORT=25940
 
 torchrun --master_port=$PORT --nproc_per_node=1 ./generate_data.py

@@ -22,13 +22,13 @@ module load python
 # Activate conda environment (optional)
 mamba activate olmo2
 
-PORT=25920
+PORT=25929
 
 torchrun --master_port=$PORT --nproc_per_node=1 ./train_hmm.py \
-    --num_emissions=100 \
-    --num_states=500 \
+    --num_emissions=200 \
+    --num_states=200 \
     --seq_length=100 \
-    --batch_size=256 \
+    --batch_size=1024 \
     --update_freq=32 \
     --num_epoch=1000 \
     --save_epoch_freq=5

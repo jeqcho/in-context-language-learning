@@ -19,9 +19,10 @@ class DataGenerator:
     gen_seq_len: int
     permutate_emissions: bool
     hmm_wrapper: HMMWrapper
+    epoch_on_filename: int
 
     def __str__(self):
-        return f"{str(self.hmm_wrapper)}-gen_seq_len-{self.gen_seq_len}-num_seq-{self.num_seq}"
+        return f"{str(self.hmm_wrapper)}-epoch_trained-{str(self.epoch_on_filename)}-gen_seq_len-{self.gen_seq_len}-num_seq-{self.num_seq}"
 
     def __post_init__(self):
         self.data_filename = f"/n/netscratch/sham_lab/Everyone/jchooi/in-context-language-learning/data/synthetic/{self.__str__()}.npy"
@@ -35,7 +36,7 @@ class DataGenerator:
 
     def generate_all(self, batch_size: int = 32) -> NDArray[np.int_]:
         all_emission_tensors = []
-        pbar = tqdm(total=self.num_seq)
+        pbar = tqdm(total=self.num_seq, mininterval=2)
         while pbar.n < self.num_seq:
             current_emission_tensors = self.hmm_wrapper.model.batched_sample(
                 batch_size=batch_size, seq_len=self.gen_seq_len

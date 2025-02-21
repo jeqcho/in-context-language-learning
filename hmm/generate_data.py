@@ -23,17 +23,20 @@ hmm_args = HMMArgs(
 # track time
 tracker = TimeTracker()
 
-model = load_model(hmm_args, epoch_on_filename=20)
+# load model
+epoch_on_filename = 10
+model = load_model(hmm_args, epoch_on_filename=epoch_on_filename)
 hmm_wrapper = HMMWrapper(model, hmm_args)
 
 data_generator = DataGenerator(
     gen_seq_len=100,
-    num_seq=int(1e4),
+    num_seq=int(1e8),
     permutate_emissions=False,
     hmm_wrapper=hmm_wrapper,
+    epoch_on_filename=epoch_on_filename,
 )
 
-#%%
+# %%
 print("Generating data...")
 result: NDArray[np.int_] = data_generator.generate_all(batch_size=64)
 print("Data generation complete!")

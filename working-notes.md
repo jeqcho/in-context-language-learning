@@ -626,3 +626,7 @@ Trying to run the data generation, but there's an error saying the model is stil
 Keep a remote copy of pomegranate at [https://github.com/jeqcho/pomegranate](https://github.com/jeqcho/pomegranate).
 
 The error now: `TypeError: cannot assign 'torch.FloatTensor' as parameter 'emission_probs' (torch.nn.Parameter or None expected)`
+
+# Feb 20
+
+Fixed all errors. Sbatched a data generation run for H-500-E-100. Also sbatched training runs of H-200-E-200.
