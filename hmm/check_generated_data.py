@@ -1,10 +1,14 @@
 """
+Sanity check the generated data of a HMM
+"""
+
+"""
 Uses HMMs to generate synthetic data for LLMs.
 """
 
 # %%
 from DataGenerator import DataGenerator
-from utils import load_model, HMMWrapper, TimeTracker
+from utils import load_model, HMMWrapper
 from HMMArgs import HMMArgs
 
 from numpy.typing import NDArray
@@ -20,11 +24,8 @@ hmm_args = HMMArgs(
     update_freq=64,
 )
 
-# track time
-tracker = TimeTracker()
-
 # load model
-epoch_on_filename = 10
+epoch_on_filename = 20
 model = load_model(hmm_args, epoch_on_filename=epoch_on_filename)
 hmm_wrapper = HMMWrapper(model, hmm_args)
 
@@ -37,14 +38,19 @@ data_generator = DataGenerator(
 )
 
 # %%
-print("Generating data...")
-result: NDArray[np.int_] = data_generator.generate_all(batch_size=64)
-print("Data generation complete!")
+print(f"Loading data from {data_generator.data_filename}")
+result = np.load(data_generator.data_filename)
+print("Data loaded!")
 
-print(f"Saving data to {data_generator.data_filename}")
-np.save(data_generator.data_filename, result)
-print("Data saved!")
+# %%
 
-# log time
-print(f"Total time taken: {tracker.format_time(tracker.seconds_elapsed())}")
+# import here since this block can be called directly after generate_data.py
+from utils import Tokenizer
+import torch
+
+
+tokenizer_filename = "/n/netscratch/sham_lab/Everyone/jchooi/in-context-language-learning/data/tokenizer.json"
+tokenizer = Tokenizer(tokenizer_filename)
+data = torch.tensor(result[:20])
+print(tokenizer.detokenize_batch(data))
 # %%
