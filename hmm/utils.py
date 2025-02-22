@@ -15,6 +15,8 @@ from tqdm import tqdm
 import wandb
 from HMMArgs import HMMArgs
 import time
+import argparse
+
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -422,3 +424,44 @@ def init_model(hmm_args: HMMArgs) -> DenseHMM:
 def load_model(hmm_args: HMMArgs, epoch_on_filename: int) -> DenseHMM:
     model = torch.load(hmm_args.epoch_stamped_filename(epoch_on_filename))
     return model
+
+
+def get_hmm_args_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Train a Hidden Markov Model (HMM) using the pomegranate library."
+    )
+    parser.add_argument(
+        "--num_emissions",
+        type=int,
+        required=True,
+        help="Number of emissions in the HMM",
+    )
+    parser.add_argument(
+        "--num_states", type=int, required=True, help="Number of states in the HMM"
+    )
+    parser.add_argument(
+        "--seq_length",
+        type=int,
+        required=True,
+        help="Length of the sequences used for training",
+    )
+    parser.add_argument(
+        "--batch_size", type=int, required=True, help="Batch size for training"
+    )
+    parser.add_argument(
+        "--num_epoch", type=int, required=True, help="Number of epochs for training"
+    )
+    parser.add_argument(
+        "--update_freq",
+        type=int,
+        help="Number of batches before calling from_summaries.",
+    )
+    parser.add_argument(
+        "--unique", action="store_true", help="Train on unique sentences only"
+    )
+    parser.add_argument(
+        "--save_epoch_freq",
+        type=int,
+        help="Save the model at that epoch frequency. If save_epoch_freq=5, save model after 5 epochs of training.",
+    )
+    return parser

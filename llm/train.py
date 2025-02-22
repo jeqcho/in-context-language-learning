@@ -2,21 +2,38 @@
 import os
 import sys
 import time
+import numpy as np
 import yaml
-import torch as t
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.distributed as dist
 from torch.optim.lr_scheduler import LinearLR
 from torch.nn.parallel import DistributedDataParallel as DDP
 import wandb
+from torch.utils.data import Dataset, DataLoader
 
 from llama import Llama
 from data import generate_batch
 from eval import ground_truth, unigram_batch, bigram_batch, evaluator_logits
 
-device = t.device("cuda" if t.cuda.is_available() else "cpu")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
+
+
+class HMMDataset(Dataset):
+    def __init__(self, input_ids):
+        "Initialization"
+        self.input_ids = input_ids
+
+    def __len__(self):
+        "Denotes the total number of samples"
+        return len(self.input_ids)
+
+    def __getitem__(self, idx):
+        "Generates one sample of data"
+        # Select sample
+        return self.input_ids[idx]
 
 
 class Trainer:
@@ -31,11 +48,13 @@ class Trainer:
         rank,
         use_ddp,
         use_multi_node,
+        data_loader,
     ):
         self.USE_DDP = use_ddp
         self.USE_MULTI_NODE = use_multi_node
         self.cfg = config
         self._unpack_dict(self.cfg)
+        self.data_loader = data_loader
 
         self.rank = rank
         self.global_rank = int(os.environ.get("RANK", rank)) if use_multi_node else rank
@@ -76,7 +95,7 @@ class Trainer:
     def save_checkpoint(self, final=False):
         """Save model checkpoint."""
         self.model.eval()
-        with t.no_grad():
+        with torch.no_grad():
             checkpoint_path = os.path.join(
                 self.save_path, "final" if final else f"step_{self.iters}"
             )
@@ -90,13 +109,13 @@ class Trainer:
                 "scheduler": self.scheduler.state_dict(),
                 "num_train": self.iters,
             }
-            t.save(checkpoint_data, checkpoint_path)
+            torch.save(checkpoint_data, checkpoint_path)
             print(f"Checkpoint saved at {checkpoint_path}")
         self.model.train()
 
     def load_from_checkpoint(self, checkpoint_path):
         """Load model from checkpoint."""
-        checkpoint = t.load(checkpoint_path)
+        checkpoint = torch.load(checkpoint_path)
         model_state = checkpoint["model"]
         (
             self.model.module.load_state_dict(model_state)
@@ -116,32 +135,20 @@ class Trainer:
         )
         print(f"Saved Hugging Face model at {pretrained_path}")
 
-    def eval_step(self, to_log, num_states, evaluators=False, zipfian=False):
+    def eval_step(
+        self,
+        to_log,
+        num_states,
+        x_t,
+        x_idx,
+        tm,
+        idx_to_token,
+        evaluators=False,
+        zipfian=False,
+    ):
         """Performs a single evaluation step."""
         self.model.eval()
-        with t.no_grad():
-            # Generate batch
-            x_t, x_idx, tm, idx_to_token = generate_batch(
-                batch_size=self.eval_batch_size,
-                lang_size=self.eval_lang_size,
-                length=self.seq_len,
-                num_symbols=num_states,
-                random_symbols=False,
-                low_symbols=None,
-                high_symbols=None,
-                random_selection=self.random_selection,
-                low_idx=self.low_idx,
-                high_idx=self.high_idx,
-                doubly_stochastic=self.doubly_stochastic,
-                zipfian=zipfian,
-                eval=True,
-            )
-
-            # Move data to device with correct dtypes
-            x_t = x_t.to(self.rank, dtype=t.int64)
-            x_idx = x_idx.to(self.rank, dtype=t.int64)
-            tm = tm.to(self.rank, dtype=t.float)
-
+        with torch.no_grad():
             # Model forward pass
             preds = self.model(x_t)[:, :-1, :]  # Predict next tokens
             preds_log = F.log_softmax(preds, dim=-1)  # Convert to log probabilities
@@ -161,8 +168,8 @@ class Trainer:
             if evaluators:
                 # Uniform Distribution Loss
                 uniform_probs = (
-                    t.ones_like(preds_last, device=self.rank) / self.vocab_size
-                ).to(self.rank, dtype=t.float)
+                    torch.ones_like(preds_last, device=self.rank) / self.vocab_size
+                ).to(self.rank, dtype=torch.float)
                 uniform_loss = self.eval_loss_fn(preds_last, uniform_probs)
                 to_log[f"test/uniform_kl_div/{num_states}_states"] = (
                     uniform_loss.detach().cpu().numpy()
@@ -171,10 +178,10 @@ class Trainer:
                 # Unigram Distribution Loss
                 unigram_probs = unigram_batch(
                     x_idx[:, :-1], num_states, device=self.rank
-                ).to(self.rank, dtype=t.float)
+                ).to(self.rank, dtype=torch.float)
                 unigram_logits = evaluator_logits(
                     self.vocab_size, unigram_probs, idx_to_token, self.rank
-                ).to(self.rank, dtype=t.float)
+                ).to(self.rank, dtype=torch.float)
                 unigram_loss = self.eval_loss_fn(preds_last, unigram_logits)
                 to_log[f"test/unigram_kl_div/{num_states}_states"] = (
                     unigram_loss.detach().cpu().numpy()
@@ -183,10 +190,10 @@ class Trainer:
                 # Bigram Distribution Loss
                 bigram_probs = bigram_batch(
                     x_idx[:, :-1], num_states, device=self.rank
-                ).to(self.rank, dtype=t.float)
+                ).to(self.rank, dtype=torch.float)
                 bigram_logits = evaluator_logits(
                     self.vocab_size, bigram_probs, idx_to_token, self.rank
-                ).to(self.rank, dtype=t.float)
+                ).to(self.rank, dtype=torch.float)
                 bigram_loss = self.eval_loss_fn(preds_last, bigram_logits)
                 to_log[f"test/bigram_kl_div/{num_states}_states"] = (
                     bigram_loss.detach().cpu().numpy()
@@ -195,29 +202,12 @@ class Trainer:
         self.model.train()
         return eval_loss, to_log
 
-    def train_step(self):
+    def train_step(self, x_t):
         """Performs a single training step."""
         start_time = time.time()
         self.model.train()
 
         to_log = {}
-
-        # Generate batch and move to device
-        x_t = generate_batch(
-            self.train_batch_size,
-            self.train_lang_size,
-            self.seq_len,
-            self.num_states,
-            self.random_symbols,
-            self.low_symbols,
-            self.high_symbols,
-            self.random_selection,
-            self.low_idx,
-            self.high_idx,
-            self.doubly_stochastic,
-            zipfian=self.zipfian,
-            eval=False,
-        ).to(self.rank, dtype=t.int64)
 
         # Forward pass
         preds = self.model(x_t)[:, :-1, :]  # Predict next tokens
@@ -270,27 +260,62 @@ class Trainer:
         # Determine the evaluation range dynamically
         eval_states = list(range(3, 81, 5))  # Dynamically generated [3, 5, 10, ..., 80]
 
-        for _ in range(self.steps + 1):
-            to_log = self.train_step()  # Perform training step
+        num_epoch = 1
+        for __ in range(num_epoch):
+            for batch in self.data_loader:
+                # Generate batch and move to device
+                batch = batch.to(self.rank, dtype=torch.int64)
 
-            # Ensure only rank 0 performs evaluation
-            if is_main_process and self.iters % self.eval_interval == 0:
-                for num_states in eval_states:
-                    eval_loss, to_log = self.eval_step(
-                        to_log, num_states, evaluators=True, zipfian=False
-                    )
-                    self.eval_loss.append(eval_loss.detach().cpu().numpy())
+                to_log = self.train_step(batch)  # Perform training step
 
-            # Checkpointing at intervals
-            if is_main_process and self.iters % self.save_interval == 0:
-                self.save_checkpoint()
+                # Ensure only rank 0 performs evaluation
+                if is_main_process and self.iters % self.eval_interval == 0:
+                    for num_states in eval_states:
+                        with torch.no_grad():
+                            # Generate batch
+                            x_t, x_idx, tm, idx_to_token = generate_batch(
+                                batch_size=self.eval_batch_size,
+                                lang_size=self.eval_lang_size,
+                                length=self.seq_len,
+                                num_symbols=num_states,
+                                random_symbols=False,
+                                low_symbols=None,
+                                high_symbols=None,
+                                random_selection=self.random_selection,
+                                low_idx=self.low_idx,
+                                high_idx=self.high_idx,
+                                doubly_stochastic=self.doubly_stochastic,
+                                zipfian=False,
+                                eval=True,
+                            )
 
-            # Logging metrics
-            if is_main_process:
-                if self.iters % self.print_interval == 0:
-                    print(f"Step {self.iters} completed")
-                if wandb.run is not None:
-                    wandb.log(to_log)
+                            # Move data to device with correct dtypes
+                            x_t = x_t.to(self.rank, dtype=torch.int64)
+                            x_idx = x_idx.to(self.rank, dtype=torch.int64)
+                            tm = tm.to(self.rank, dtype=torch.float)
+
+                        eval_loss, to_log = self.eval_step(
+                            to_log,
+                            num_states,
+                            x_t,
+                            x_idx,
+                            tm,
+                            idx_to_token,
+                            evaluators=True,
+                            zipfian=False,
+                        )
+                        self.eval_loss.append(eval_loss.detach().cpu().numpy())
+
+                # Checkpointing at intervals
+                if is_main_process and self.iters % self.save_interval == 0:
+                    self.save_checkpoint()
+
+                # Logging metrics
+                if is_main_process:
+                    if self.iters % self.print_interval == 0:
+                        print(f"Step {self.iters} completed")
+                    if wandb.run is not None:
+                        wandb.log(to_log)
 
         # Final checkpoint saving
         if is_main_process:
@@ -344,7 +369,7 @@ def main(cfg_path):
             device_id = int(os.environ["LOCAL_RANK"])
         else:
             print(f"Running DDP on rank {global_rank}.")
-            device_id = global_rank % t.cuda.device_count()
+            device_id = global_rank % torch.cuda.device_count()
 
     # Load config
     with open(cfg_path, "r") as file:
@@ -362,13 +387,23 @@ def main(cfg_path):
 
     # Initialize model and optimizer
     model = Llama(cfg).to(device=device_id)
-    optim = t.optim.AdamW(
+    optim = torch.optim.AdamW(
         model.parameters(),
         lr=float(cfg["train"]["lr"]),
         weight_decay=cfg["train"]["weight_decay"],
     )
     train_loss_fn = nn.CrossEntropyLoss()
     eval_loss_fn = nn.KLDivLoss(reduction="batchmean")
+
+    # Init dataloader
+    # TODO put filename params into the yaml
+    filename = "/n/netscratch/sham_lab/Everyone/jchooi/in-context-language-learning/data/synthetic/H-500-E-100-L-100-B-256-update_freq-32-epoch_trained-10-gen_seq_len-100-num_seq-100000000.npy"
+    input_ids = np.load(filename)
+    input_ids = torch.tensor(input_ids)
+    dataset = HMMDataset(input_ids)
+    data_loader = DataLoader(
+        dataset, batch_size=cfg["train"]["train_batch_size"], shuffle=True
+    )
 
     # Trainer instance
     trainer = Trainer(
@@ -381,6 +416,7 @@ def main(cfg_path):
         device_id,
         USE_DDP,
         USE_MULTI_NODE,
+        data_loader,
     )
 
     # Uncomment to load from checkpoint

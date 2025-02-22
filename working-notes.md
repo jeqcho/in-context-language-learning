@@ -630,3 +630,15 @@ The error now: `TypeError: cannot assign 'torch.FloatTensor' as parameter 'emiss
 # Feb 20
 
 Fixed all errors. Sbatched a data generation run for H-500-E-100. Also sbatched training runs of H-200-E-200.
+
+# Feb 21
+
+Sbatched a data generation run for H-200-E-200.
+
+Let's train the LLM on the outputs of H-500-E-100.
+
+# Feb 22
+
+We will now generate datasets that permutate the emission matrix. Since we will generate the dataset using batches for efficiency, each batch will be from the same matrix, but it should be fine given that we using `shuffle=True` in the `dataloader`.
+
+First let me add a cli parser for the data generation.

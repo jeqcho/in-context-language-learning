@@ -15,12 +15,18 @@ class HMMArgs:
     num_epoch: int
     model_filename: str = field(init=False)
     unique: bool
-    update_freq: Union[int, Literal["all"]]  # how many batches before we call from_summaries()
+    update_freq: Union[
+        int, Literal["all"]
+    ]  # how many batches before we call from_summaries()
 
     def __post_init__(self):
-        self.model_filename = (
-            f"/n/netscratch/sham_lab/Everyone/jchooi/in-context-language-learning/models/hmm-{self.__str__()}.pkl"
-        )
+        self.model_filename = f"/n/netscratch/sham_lab/Everyone/jchooi/in-context-language-learning/models/hmm-{self.__str__()}.pkl"
+
+        if self.update_freq is None:
+            self.update_freq = "all"
+        else:
+            assert isinstance(self.update_freq, int)
+            assert self.update_freq > 0
 
     def __str__(self):
         string = f"H-{self.num_states}-E-{self.num_emissions}-L-{self.seq_length}-B-{self.batch_size}-update_freq-{self.update_freq}"
@@ -33,8 +39,16 @@ class HMMArgs:
         truncated_filename = self.model_filename[:-4]
 
         truncated_filename += f"-epoch-{str(epoch)}.pkl"
-        
+
         return truncated_filename
 
     def __hash__(self):
-        return hash((self.num_emissions, self.num_states, self.seq_length, self.batch_size, self.num_epoch))
+        return hash(
+            (
+                self.num_emissions,
+                self.num_states,
+                self.seq_length,
+                self.batch_size,
+                self.num_epoch,
+            )
+        )

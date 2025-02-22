@@ -12,44 +12,29 @@ The trained HMM is saved at:
 """
 
 # %%
-from utils import *
 import torch
-import argparse
 import time
 from time import gmtime, strftime
+
+from HMMArgs import HMMArgs
+from utils import HMMWrapper, get_hmm_args_parser, init_model, load_model
 
 # %%
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# %%
 
+# %%
 if __name__ == "__main__":
     torch.manual_seed(91)
     # receive args from commmand
-    parser = argparse.ArgumentParser(
-        description="Train a Hidden Markov Model (HMM) using the pomegranate library."
-    )
-    parser.add_argument("--num_emissions", type=int, required=True, help="Number of emissions in the HMM")
-    parser.add_argument("--num_states", type=int, required=True, help="Number of states in the HMM")
-    parser.add_argument("--seq_length", type=int, required=True, help="Length of the sequences used for training")
-    parser.add_argument("--batch_size", type=int, required=True, help="Batch size for training")
-    parser.add_argument("--num_epoch", type=int, required=True, help="Number of epochs for training")
-    parser.add_argument("--update_freq", type=int, help="Number of batches before calling from_summaries.")
-    parser.add_argument("--unique", action="store_true", help="Train on unique sentences only")
-    parser.add_argument(
-        "--save_epoch_freq",
-        type=int,
-        help="Save the model at that epoch frequency. If save_epoch_freq=5, save model after 5 epochs of training.",
-    )
+    parser = get_hmm_args_parser()
     parser.add_argument("--no_save", action="store_true", help="Do not save the model")
-    parser.add_argument("--load_model_with_epoch", type=int, help="Load the model from file.")
+    parser.add_argument(
+        "--load_model_with_epoch", type=int, help="Load the model from file."
+    )
 
     args = parser.parse_args()
     args.save = not args.no_save
-    if args.update_freq is None:
-        args.update_freq = "all"
-    else:
-        assert args.update_freq > 0
 
     if args.no_save:
         assert args.save_epoch_freq is None
