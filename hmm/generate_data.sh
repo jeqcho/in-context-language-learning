@@ -24,4 +24,13 @@ mamba activate olmo2
 
 PORT=25941
 
-torchrun --master_port=$PORT --nproc_per_node=1 ./generate_data.py
+torchrun --master_port=$PORT --nproc_per_node=1 ./generate_data.py \
+    --num_emissions=200 \
+    --num_states=200 \
+    --seq_length=100 \
+    --batch_size=1024 \
+    --update_freq=32 \
+    --num_epoch=1000 \
+    --load_model_with_epoch=10 \
+    --gen_seq_len=100 \
+    --num_seq=100''000
