@@ -15,6 +15,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--load_model_with_epoch", type=int, required=True, help="Load the model from file."
     )
+    parser.add_argument("--permutate_emissions", action="store_true", help="Permutate the emission matrix.")
     parser.add_argument(
         "--gen_seq_len", type=int, required=True, help="Sequence length to generate for each sequence."
     )
@@ -22,6 +23,8 @@ if __name__ == "__main__":
         "--num_seq", type=int, required=True, help="Number of sequences to generate."
     )
     args = parser.parse_args()
+    
+    args.permutate_emissions = bool(args.permutate_emissions)
     
     # init params
     hmm_args = HMMArgs(
@@ -44,7 +47,7 @@ if __name__ == "__main__":
     data_generator = DataGenerator(
         gen_seq_len=args.gen_seq_len,
         num_seq=args.num_seq,
-        permutate_emissions=False,
+        permutate_emissions=args.permutate_emissions,
         hmm_wrapper=hmm_wrapper,
         epoch_on_filename=args.load_model_with_epoch,
     )

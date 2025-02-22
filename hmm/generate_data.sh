@@ -22,7 +22,7 @@ module load python
 # Activate conda environment (optional)
 mamba activate olmo2
 
-PORT=25941
+PORT=25944
 
 torchrun --master_port=$PORT --nproc_per_node=1 ./generate_data.py \
     --num_emissions=200 \
@@ -31,6 +31,7 @@ torchrun --master_port=$PORT --nproc_per_node=1 ./generate_data.py \
     --batch_size=1024 \
     --update_freq=32 \
     --num_epoch=1000 \
-    --load_model_with_epoch=10 \
+    --load_model_with_epoch=50 \
     --gen_seq_len=100 \
-    --num_seq=100''000
+    --num_seq=100''000''000 \
+    --permutate_emissions

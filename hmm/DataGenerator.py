@@ -22,14 +22,12 @@ class DataGenerator:
     epoch_on_filename: int
 
     def __str__(self):
-        return f"{str(self.hmm_wrapper)}-epoch_trained-{str(self.epoch_on_filename)}-gen_seq_len-{self.gen_seq_len}-num_seq-{self.num_seq}"
+        suffix = "-permutate_emissions" if self.permutate_emissions else ""
+        return f"{str(self.hmm_wrapper)}-epoch_trained-{str(self.epoch_on_filename)}-gen_seq_len-{self.gen_seq_len}-num_seq-{self.num_seq:_}{suffix}"
 
     def __post_init__(self):
         self.data_filename = f"/n/netscratch/sham_lab/Everyone/jchooi/in-context-language-learning/data/synthetic/{self.__str__()}.npy"
         self.hmm_wrapper.model.sample_length = self.num_seq
-        if self.permutate_emissions:
-            # pomegranate uses ModuleList to store the emission probabilities
-            random.shuffle(self.hmm_wrapper.model.distributions)  # type: ignore
 
         # sampling in pomegranate requires the model to be on the cpu
         self.hmm_wrapper.model.cpu()
@@ -51,6 +49,10 @@ class DataGenerator:
         return all_emission_tensors.cpu().numpy()
 
     def generate_batch(self) -> NDArray[np.int_]:
+        if self.permutate_emissions:
+            # pomegranate uses ModuleList to store the emission probabilities
+            random.shuffle(self.hmm_wrapper.model.distributions)  # type: ignore
+
         emission_tensors: List[torch.Tensor] = self.hmm_wrapper.model.sample(
             self.num_seq
         )
