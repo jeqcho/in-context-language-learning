@@ -21,11 +21,11 @@ mamba activate olmo2
 
 # Set master address and port
 export MASTER_ADDR="127.0.0.0"
-export PYTHONPATH=$PYTHONPATH:/OLMo
+export PYTHONPATH=$PYTHONPATH:/n/home07/jchooi/in-context-language-learning
 
 echo Node IP: $master
 export LOGLEVEL=INFO
 
-PORT=26021
+PORT=26022
 
-torchrun --master_port=$PORT --nproc_per_node=1 /n/home07/jchooi/in-context-language-learning/llm/train.py test-run.yaml
+torchrun --master_port=$PORT --nproc_per_node=1 /n/home07/jchooi/in-context-language-learning/llm/train.py run.yaml

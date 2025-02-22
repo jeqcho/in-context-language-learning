@@ -22,6 +22,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "--num_seq", type=int, required=True, help="Number of sequences to generate."
     )
+    parser.add_argument(
+        "--suffix", type=str, help="Optional suffix (e.g. test)"
+    )
     args = parser.parse_args()
     
     args.permutate_emissions = bool(args.permutate_emissions)
@@ -50,6 +53,7 @@ if __name__ == "__main__":
         permutate_emissions=args.permutate_emissions,
         hmm_wrapper=hmm_wrapper,
         epoch_on_filename=args.load_model_with_epoch,
+        suffix=args.suffix
     )
 
     # %%

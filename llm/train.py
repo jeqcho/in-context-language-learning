@@ -3,6 +3,7 @@ import os
 import sys
 import time
 import numpy as np
+from pomegranate.hmm.dense_hmm import DenseHMM
 import yaml
 import torch
 import torch.nn as nn
@@ -12,6 +13,10 @@ from torch.optim.lr_scheduler import LinearLR
 from torch.nn.parallel import DistributedDataParallel as DDP
 import wandb
 from torch.utils.data import Dataset, DataLoader
+
+from hmm.HMMArgs import HMMArgs
+from hmm.utils import HMMWrapper
+from hmm.DataGenerator import DataGenerator
 
 from llama import Llama
 from data import generate_batch
@@ -397,8 +402,28 @@ def main(cfg_path):
 
     # Init dataloader
     # TODO put filename params into the yaml
-    filename = "/n/netscratch/sham_lab/Everyone/jchooi/in-context-language-learning/data/synthetic/H-500-E-100-L-100-B-256-update_freq-32-epoch_trained-10-gen_seq_len-100-num_seq-100000000.npy"
-    input_ids = np.load(filename)
+
+    hmm_args = HMMArgs(
+        num_emissions=cfg["hmm"]["num_emissions"],
+        num_states=cfg["hmm"]["num_states"],
+        seq_length=cfg["hmm"]["seq_length"],
+        batch_size=cfg["hmm"]["batch_size"],
+        unique=cfg["hmm"]["unique"],
+        update_freq=cfg["hmm"]["update_freq"],
+        num_epoch=100,  # doesn't matter
+    )
+
+    hmm_wrapper = HMMWrapper(DenseHMM(), hmm_args) # file naming uses hmm_args only and not the model
+
+    data_generator = DataGenerator(
+        num_seq=cfg["hmm"]["num_seq"],
+        gen_seq_len=cfg["hmm"]["gen_seq_len"],
+        permutate_emissions=cfg["hmm"]["permutate_emissions"],
+        hmm_wrapper=hmm_wrapper,
+        epoch_on_filename=cfg["hmm"]["load_model_with_epoch"],
+        suffix=cfg["hmm"]["suffix"],
+    )
+    input_ids = np.load(data_generator.data_filename)
     input_ids = torch.tensor(input_ids)
     dataset = HMMDataset(input_ids)
     data_loader = DataLoader(
@@ -430,3 +455,5 @@ def main(cfg_path):
 
 if __name__ == "__main__":
     main(sys.argv[1])
+
+# %%

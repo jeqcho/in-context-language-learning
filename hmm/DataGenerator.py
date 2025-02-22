@@ -20,10 +20,12 @@ class DataGenerator:
     permutate_emissions: bool
     hmm_wrapper: HMMWrapper
     epoch_on_filename: int
+    suffix: str
 
     def __str__(self):
-        suffix = "-permutate_emissions" if self.permutate_emissions else ""
-        return f"{str(self.hmm_wrapper)}-epoch_trained-{str(self.epoch_on_filename)}-gen_seq_len-{self.gen_seq_len}-num_seq-{self.num_seq:_}{suffix}"
+        perm_suffix = "-permutate_emissions" if self.permutate_emissions else ""
+        suffix = f"-{self.suffix}" if self.suffix else ""
+        return f"{str(self.hmm_wrapper)}-epoch_trained-{str(self.epoch_on_filename)}-gen_seq_len-{self.gen_seq_len}-num_seq-{self.num_seq:_}{perm_suffix}{suffix}"
 
     def __post_init__(self):
         self.data_filename = f"/n/netscratch/sham_lab/Everyone/jchooi/in-context-language-learning/data/synthetic/{self.__str__()}.npy"

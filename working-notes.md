@@ -642,3 +642,9 @@ Let's train the LLM on the outputs of H-500-E-100.
 We will now generate datasets that permutate the emission matrix. Since we will generate the dataset using batches for efficiency, each batch will be from the same matrix, but it should be fine given that we using `shuffle=True` in the `dataloader`.
 
 First let me add a cli parser for the data generation.
+
+OK I sbatched a 100M sequence data generation for H-200-E-200 with permutations.
+
+I want to generate one with H-500-E-200 so I sbatched a train for that model. TODO generate data with it.
+
+Idea: for non-permutate (or even with permutate), compare how the LLM learns the HMM if we vary H.
