@@ -4,8 +4,8 @@ Uses HMMs to generate synthetic data for LLMs.
 
 # %%
 from DataGenerator import DataGenerator
-from utils import load_model, HMMWrapper, TimeTracker, get_hmm_args_parser
-from HMMArgs import HMMArgs
+from hmm.utils import load_model, HMMWrapper, TimeTracker, get_hmm_args_parser
+from hmm.HMMArgs import HMMArgs
 
 from numpy.typing import NDArray
 import numpy as np

@@ -7,7 +7,7 @@ Input
 
 # %%
 from typing import List
-from utils import *
+from hmm.utils import *
 import torch
 from jaxtyping import Float
 

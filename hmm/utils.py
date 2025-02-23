@@ -13,7 +13,7 @@ from pomegranate.hmm import DenseHMM
 from torch.utils.data import TensorDataset, DataLoader
 from tqdm import tqdm
 import wandb
-from HMMArgs import HMMArgs
+from hmm.HMMArgs import HMMArgs
 import time
 import argparse
 

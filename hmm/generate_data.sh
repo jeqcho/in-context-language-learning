@@ -22,6 +22,9 @@ module load python
 # Activate conda environment (optional)
 mamba activate olmo2
 
+# To expose imports to hmm
+export PYTHONPATH=$PYTHONPATH:/n/home07/jchooi/in-context-language-learning
+
 PORT=25947
 
 torchrun --master_port=$PORT --nproc_per_node=1 ./generate_data.py \

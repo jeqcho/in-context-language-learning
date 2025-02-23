@@ -7,7 +7,7 @@ import torch
 from dataclasses import dataclass
 
 from tqdm import tqdm
-from utils import HMMWrapper
+from hmm.utils import HMMWrapper
 from numpy.typing import NDArray
 import numpy as np
 import random

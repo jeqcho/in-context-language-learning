@@ -4,7 +4,7 @@ Calculate the logits under various strategies
 
 import torch
 from jaxtyping import Int, Float
-from HMMArgs import HMMArgs
+from hmm.HMMArgs import HMMArgs
 
 
 def uniform(

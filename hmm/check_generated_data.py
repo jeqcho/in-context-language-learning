@@ -7,9 +7,9 @@ Uses HMMs to generate synthetic data for LLMs.
 """
 
 # %%
-from DataGenerator import DataGenerator
-from utils import load_model, HMMWrapper
-from HMMArgs import HMMArgs
+from hmm.DataGenerator import DataGenerator
+from hmm.utils import load_model, HMMWrapper
+from hmm.HMMArgs import HMMArgs
 
 from numpy.typing import NDArray
 import numpy as np

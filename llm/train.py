@@ -15,7 +15,7 @@ import wandb
 from torch.utils.data import Dataset, DataLoader
 
 from hmm.HMMArgs import HMMArgs
-from hmm.utils import HMMWrapper
+from hmm.utils import HMMWrapper, load_model
 from hmm.DataGenerator import DataGenerator
 
 from llama import Llama
@@ -94,6 +94,9 @@ class Trainer:
         """Unpack config dictionary into attributes."""
         # d can be either a dict or a Run. Run have keys() but not values()
         for section_key in d.keys():
+            # TODO overhaul the cfg loading
+            if section_key == "hmm":
+                continue
             for key, value in d[section_key].items():
                 setattr(self, key, value)
 
@@ -413,7 +416,11 @@ def main(cfg_path):
         num_epoch=100,  # doesn't matter
     )
 
-    hmm_wrapper = HMMWrapper(DenseHMM(), hmm_args) # file naming uses hmm_args only and not the model
+    hmm_model = load_model(hmm_args, epoch_on_filename=cfg["hmm"]["load_model_with_epoch"])
+
+    hmm_wrapper = HMMWrapper(
+        hmm_model, hmm_args
+    )  # file naming uses hmm_args only and not the model
 
     data_generator = DataGenerator(
         num_seq=cfg["hmm"]["num_seq"],
@@ -423,12 +430,14 @@ def main(cfg_path):
         epoch_on_filename=cfg["hmm"]["load_model_with_epoch"],
         suffix=cfg["hmm"]["suffix"],
     )
+    
     input_ids = np.load(data_generator.data_filename)
     input_ids = torch.tensor(input_ids)
     dataset = HMMDataset(input_ids)
     data_loader = DataLoader(
         dataset, batch_size=cfg["train"]["train_batch_size"], shuffle=True
     )
+    del hmm_model
 
     # Trainer instance
     trainer = Trainer(

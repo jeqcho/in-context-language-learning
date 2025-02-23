@@ -16,8 +16,8 @@ import torch
 import time
 from time import gmtime, strftime
 
-from HMMArgs import HMMArgs
-from utils import HMMWrapper, get_hmm_args_parser, init_model, load_model
+from hmm.HMMArgs import HMMArgs
+from hmm.utils import HMMWrapper, get_hmm_args_parser, init_model, load_model
 
 # %%
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
