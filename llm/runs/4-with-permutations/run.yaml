@@ -1,0 +1,65 @@
+wandb:
+  project: testing-llama
+  entity: jchooi
+  wandb_dir: /n/netscratch/sham_lab/Everyone/jchooi/in-context-language-learning/wandb
+
+markov:
+  num_states: 5
+  random_symbols: True
+  low_symbols: 3
+  high_symbols: 10
+  random_selection: True
+  low_idx: 0
+  high_idx: 256
+  doubly_stochastic: True
+  zipfian: False
+
+hmm:
+  num_states: 200
+  num_emissions: 200
+  seq_length: 100
+  batch_size: 1024
+  update_freq: 32
+  unique: false
+  load_model_with_epoch: 20
+  permutate_emissions: true
+  gen_seq_len: 100
+  num_seq: 100_000_000
+  suffix: ''
+
+model:
+  seq_len: 200
+  hid_dim: 768
+  n_head: 1
+  n_layer: 4
+  save_path: /n/netscratch/sham_lab/Everyone/jchooi/in-context-language-learning/models/llm
+  resid_pdrop: 0.1
+  embd_pdrop: 0.1
+  attn_pdrop: 0.1
+
+  # FOR ROPE and LLAMAs
+  mlp_ratio: 4
+
+  # FOR LLAMA
+  attn_bias: True
+  mlp_bias: True
+  rope_scaling:
+    type: dynamic
+    factor: 2.0
+  output_hidden_states: True
+
+train:
+  lr: 6e-5
+  weight_decay: 0.01
+  train_batch_size: 1024
+  train_lang_size: 1024
+  eval_batch_size: 256
+  eval_lang_size: 256
+  steps: 10000
+  eval_interval: 50
+  print_interval: 500
+  save_interval: 5000
+
+  warmup_ratio: 0.0
+  linear_start_factor: 1.0
+  linear_end_factor: 1.0

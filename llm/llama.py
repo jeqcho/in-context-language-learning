@@ -132,7 +132,7 @@ class Llama(nn.Module):
 # Example usage:
 if __name__ == "__main__":
     config_path = (
-        "/n/holyscratch01/sham_lab/Users/jlsun/icll-models/markov/wandb_config.yaml"
+        "/n/home07/jchooi/in-context-language-learning/llm/runs/4-with-permutations/run.yaml"
     )
     with open(config_path, "r") as file:
         config = yaml.safe_load(file)

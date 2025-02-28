@@ -648,3 +648,37 @@ OK I sbatched a 100M sequence data generation for H-200-E-200 with permutations.
 I want to generate one with H-500-E-200 so I sbatched a train for that model. TODO generate data with it.
 
 Idea: for non-permutate (or even with permutate), compare how the LLM learns the HMM if we vary H.
+
+# Feb 25
+
+Let's train on the permutated H-200-E-200. But first let's check why the others didn't save. Ok it did save.
+
+We need to generate a larger dataset. Currently it is 100M tokens (using 8 hours). But that only satisfies 100 seconds of trianing (1M tokens/s). We should aim for 5B tokens, which is 83 minutes of training. Naively, that is also 400 hours of GPU time. Let's try to use claude 3.7 to speed things up.
+
+Current benchmark for H-200-E-200-perms is 4m35s for 1M.
+
+1. Change batch size
+Seems like we can scale until 4096 and it still works fine. What took 4m is now 20s.
+
+2. Pre-allocate tensors
+This reduced 4m to 2m.
+
+These two allows for 20 hours of GPU instead of 400.
+
+Testing it on the 100M H-200-E-200 gives an estimated 1h instead of 8h using 1024.
+
+# Feb 27
+
+On the synthetic data generation, it now reaches 1.7T per file. I have two files so that's 3.4TB. First let's make sure we are nowhere near the lab's quota.
+[Handbook](https://handbook.eng.kempnerinstitute.harvard.edu/s1_high_performance_computing/storage_and_data_transfer/understanding_storage_options.html) says that the lab has 50 TB. Calling `du -sh /n/netscratch/sham_lab` to get the amount of storage used.
+
+Another concern is that we budgeted 55 hours for each run. 46h passed and 18h to go, so total 64 h. We still need to give it 10h at least, or maybe 15h for the data to save. Let's see if we can give more time to an sbatched run? It is possible to use `scontrol` but access is denied.
+
+I cut loss and will sbatch a new run. I will create 5 parallel copies, each is 1B tokens.
+
+Actually, let's think if we actually need that much. Chincilla says 20 tokens per parameter. Let's see how big is the Llama.
+
+Llama is about 100M parameters. We need about 2T tokens.
+
+I also realize we set the models to `cpu`. I sbatched to compare the new speed after removing that line. Somehow, removing that line makes things runs slower. It is aspect of that currently is going to take one and 70 hours to run five minutes talking while previously it was just 60 hours.
+

@@ -3,6 +3,7 @@ Uses HMMs to generate synthetic data for LLMs.
 """
 
 # %%
+import os
 from DataGenerator import DataGenerator
 from hmm.utils import load_model, HMMWrapper, TimeTracker, get_hmm_args_parser
 from hmm.HMMArgs import HMMArgs
@@ -25,9 +26,13 @@ if __name__ == "__main__":
     parser.add_argument(
         "--suffix", type=str, help="Optional suffix (e.g. test)"
     )
+    parser.add_argument(
+        "--gen_batch_size", type=int, required=True, help="Batch size when generating sequences."
+    )
     args = parser.parse_args()
     
     args.permutate_emissions = bool(args.permutate_emissions)
+    print(args)
     
     # init params
     hmm_args = HMMArgs(
@@ -58,12 +63,17 @@ if __name__ == "__main__":
 
     # %%
     print("Generating data...")
-    result: NDArray[np.int_] = data_generator.generate_all(batch_size=64)
+    result: NDArray[np.int_] = data_generator.generate_all(batch_size=args.gen_batch_size)
     print("Data generation complete!")
 
     print(f"Saving data to {data_generator.data_filename}")
     np.save(data_generator.data_filename, result)
     print("Data saved!")
+    
+    #  Clean up the temporary file
+    temp_filename = f"{data_generator.data_filename}.tmp"
+    if os.path.exists(temp_filename):
+        os.remove(temp_filename)
 
     # log time
     print(f"Total time taken: {tracker.format_time(tracker.seconds_elapsed())}")

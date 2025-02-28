@@ -11,6 +11,7 @@ from hmm.utils import HMMWrapper
 from numpy.typing import NDArray
 import numpy as np
 import random
+import os
 
 
 @dataclass
@@ -31,36 +32,54 @@ class DataGenerator:
         self.data_filename = f"/n/netscratch/sham_lab/Everyone/jchooi/in-context-language-learning/data/synthetic/{self.__str__()}.npy"
         self.hmm_wrapper.model.sample_length = self.num_seq
 
-        # sampling in pomegranate requires the model to be on the cpu
-        self.hmm_wrapper.model.cpu()
-
     def generate_all(self, batch_size: int = 32) -> NDArray[np.int_]:
-        all_emission_tensors = []
-        pbar = tqdm(total=self.num_seq, mininterval=2)
-        while pbar.n < self.num_seq:
-            current_emission_tensors = self.hmm_wrapper.model.batched_sample(
-                batch_size=batch_size, seq_len=self.gen_seq_len
+        # Use a temporary file for the memmap
+        temp_filename = f"{self.data_filename}.tmp"
+
+        try:
+            # Create a memory-mapped array with the exact size we need
+            final_shape = (self.num_seq, self.gen_seq_len)
+            mmap_array = np.memmap(
+                temp_filename, dtype=np.int32, mode="w+", shape=final_shape
             )
-            assert current_emission_tensors.shape == (batch_size, self.gen_seq_len)
-            all_emission_tensors.append(current_emission_tensors)
-            pbar.update(batch_size)
 
-        all_emission_tensors = torch.concat(all_emission_tensors)
-        assert all_emission_tensors.ndim == 2
-        assert all_emission_tensors.shape[1] == self.gen_seq_len
-        return all_emission_tensors.cpu().numpy()
+            # Generate batches and write to the memmap
+            pbar = tqdm(total=self.num_seq, mininterval=0.5)
+            sequences_generated = 0
 
-    def generate_batch(self) -> NDArray[np.int_]:
-        if self.permutate_emissions:
-            # pomegranate uses ModuleList to store the emission probabilities
-            random.shuffle(self.hmm_wrapper.model.distributions)  # type: ignore
+            while sequences_generated < self.num_seq:
+                if self.permutate_emissions:
+                    # pomegranate uses ModuleList to store the emission probabilities
+                    # we want to shuffle the distributions in each batch 
+                    random.shuffle(self.hmm_wrapper.model.distributions)  # type: ignore
 
-        emission_tensors: List[torch.Tensor] = self.hmm_wrapper.model.sample(
-            self.num_seq
-        )
+                # Calculate how many sequences to generate in this batch
+                current_batch_size = min(batch_size, self.num_seq - sequences_generated)
 
-        # move to cpu and convert to numpy
-        emissions: NDArray[np.int_] = np.array(
-            [tensor.cpu().numpy() for tensor in emission_tensors]
-        )
-        return emissions
+                # Generate a batch
+                current_batch = self.hmm_wrapper.model.batched_sample(
+                    batch_size=current_batch_size, seq_len=self.gen_seq_len
+                )
+
+                # Write to memmap
+                mmap_array[
+                    sequences_generated : sequences_generated + current_batch_size
+                ] = current_batch.cpu().numpy()
+
+                # Update progress
+                sequences_generated += current_batch_size
+                pbar.update(current_batch_size)
+
+            pbar.close()
+
+            # Ensure all data is written
+            mmap_array.flush()
+
+            return mmap_array
+
+        except Exception as e:
+            print(f"Error during generation: {str(e)}")
+            if os.path.exists(temp_filename):
+                os.remove(temp_filename)
+            raise
+
