@@ -27,7 +27,7 @@ mamba activate olmo2
 export PYTHONPATH=$PYTHONPATH:/n/home07/jchooi/in-context-language-learning
 
 PORTS=()
-START_PORT=26120
+START_PORT=26121
 NUM_PORTS=7
 
 for ((i=0; i<NUM_PORTS; i++)); do
@@ -40,13 +40,12 @@ BATCH_SIZES=(1024 1600 2048 3000 4096)
 
 torchrun --master_port=$PORT --nproc_per_node=1 ./generate_data.py \
     --num_emissions=200 \
-    --num_states=200 \
+    --num_states=500 \
     --seq_length=100 \
-    --batch_size=1024 \
+    --batch_size=256 \
     --update_freq=32 \
     --num_epoch=1000 \
-    --load_model_with_epoch=20 \
+    --load_model_with_epoch=10 \
     --gen_seq_len=100 \
     --num_seq=2''000''000''000 \
     --gen_batch_size=${BATCH_SIZES[$INDEX]} \
-    --permutate_emissions

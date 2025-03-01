@@ -41,6 +41,55 @@ class HMMDataset(Dataset):
         return self.input_ids[idx]
 
 
+class MemoryMappedHMMDataset(Dataset):
+    def __init__(self, data_filename, chunk_size=None):
+        """Initialize dataset with memory mapping for efficient handling of large datasets.
+        
+        Args:
+            data_filename: Path to the .npy file containing the dataset
+            chunk_size: Optional size for data chunking. If None, determines a reasonable 
+                        chunk size based on available memory.
+        """
+        # Use memory mapping to access the dataset without loading it entirely
+        self.data = np.load(data_filename, mmap_mode='r')
+        self.data_shape = self.data.shape
+        
+        # Set up chunking if requested
+        self.chunk_size = chunk_size
+        if self.chunk_size is None:
+            # Determine a reasonable chunk size (default to 100,000 samples)
+            self.chunk_size = 100000
+        
+        # Cache to store recently accessed chunks
+        self.cache = {}
+        self.max_cache_chunks = 5  # Maximum number of chunks to keep in memory
+    
+    def __len__(self):
+        "Returns total number of samples"
+        return self.data_shape[0]
+    
+    def __getitem__(self, idx):
+        "Get sample by index using chunked access"
+        # Calculate which chunk this index belongs to
+        chunk_idx = idx // self.chunk_size
+        
+        # If chunk is not in cache, load it
+        if chunk_idx not in self.cache:
+            # If cache is full, remove least recently used chunk
+            if len(self.cache) >= self.max_cache_chunks:
+                oldest_chunk = next(iter(self.cache))
+                del self.cache[oldest_chunk]
+            
+            # Load the chunk into cache
+            start = chunk_idx * self.chunk_size
+            end = min((chunk_idx + 1) * self.chunk_size, len(self))
+            self.cache[chunk_idx] = torch.from_numpy(self.data[start:end].copy())
+        
+        # Get index within the chunk
+        local_idx = idx % self.chunk_size
+        return self.cache[chunk_idx][local_idx]
+
+
 class Trainer:
     def __init__(
         self,
@@ -431,11 +480,27 @@ def main(cfg_path):
         suffix=cfg["hmm"]["suffix"],
     )
     
-    input_ids = np.load(data_generator.data_filename)
-    input_ids = torch.tensor(input_ids)
-    dataset = HMMDataset(input_ids)
+    # Use memory-mapped dataset for efficient handling of large data
+    print(f"Loading dataset from {data_generator.data_filename} using memory mapping")
+    # Calculate appropriate chunk size based on batch size and sequence length
+    chunk_size = cfg["train"]["train_batch_size"] * 500  # Larger than batch size for efficiency
+    
+    # Create dataset with memory mapping
+    dataset = MemoryMappedHMMDataset(
+        data_filename=data_generator.data_filename,
+        chunk_size=chunk_size
+    )
+    
+    # Configure optimized DataLoader with multiple workers
+    num_workers = min(8, os.cpu_count() or 1)  # Use multiple workers but not too many
     data_loader = DataLoader(
-        dataset, batch_size=cfg["train"]["train_batch_size"], shuffle=True
+        dataset=dataset,
+        batch_size=cfg["train"]["train_batch_size"],
+        shuffle=True,
+        num_workers=num_workers,  # Use multiple CPU workers for data loading
+        pin_memory=True,  # Pin memory for faster GPU transfer
+        prefetch_factor=2,  # Prefetch batches
+        persistent_workers=True if num_workers > 0 else False  # Keep workers alive between epochs
     )
     del hmm_model
 

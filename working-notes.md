@@ -682,3 +682,17 @@ Llama is about 100M parameters. We need about 2T tokens.
 
 I also realize we set the models to `cpu`. I sbatched to compare the new speed after removing that line. Somehow, removing that line makes things runs slower. It is aspect of that currently is going to take one and 70 hours to run five minutes talking while previously it was just 60 hours.
 
+# Feb 8
+
+Suspiciously, the data generation with permutate emissions took only 22h, while without permutate is estimated to be 29h.
+
+For H-200-E-200-2B-perm it took 22h with 30 minutes to save.
+For H-200-E-200-2B it estimates 29h.
+For H-500-E-200-2B-perm it estimates 25h.
+For H-500-E-200-2B it estimates 23h.
+
+I am not sure whether we can trust the output of For H-200-E-200-2B.
+
+Regardless, let's train a LM on this.
+
+Changed the dataloader to use a memorymapped dataset.
