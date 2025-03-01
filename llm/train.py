@@ -315,7 +315,7 @@ class Trainer:
         self.eval_loss = []
 
         # Determine the evaluation range dynamically
-        eval_states = list(range(3, 81, 5))  # Dynamically generated [3, 5, 10, ..., 80]
+        eval_states = list(range(3, 6, 5))  # Dynamically generated [3, 5, 10, ..., 80]
 
         num_epoch = 1
         for __ in range(num_epoch):
@@ -483,7 +483,7 @@ def main(cfg_path):
     # Use memory-mapped dataset for efficient handling of large data
     print(f"Loading dataset from {data_generator.data_filename} using memory mapping")
     # Calculate appropriate chunk size based on batch size and sequence length
-    chunk_size = cfg["train"]["train_batch_size"] * 500  # Larger than batch size for efficiency
+    chunk_size = cfg["train"]["train_batch_size"] * 100  # Larger than batch size for efficiency
     
     # Create dataset with memory mapping
     dataset = MemoryMappedHMMDataset(

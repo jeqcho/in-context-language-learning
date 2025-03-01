@@ -26,6 +26,6 @@ export PYTHONPATH=$PYTHONPATH:/n/home07/jchooi/in-context-language-learning
 echo Node IP: $master
 export LOGLEVEL=INFO
 
-PORT=26023
+PORT=26024
 
 torchrun --master_port=$PORT --nproc_per_node=1 /n/home07/jchooi/in-context-language-learning/llm/train.py run.yaml

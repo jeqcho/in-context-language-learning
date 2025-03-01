@@ -22,7 +22,7 @@ hmm:
   update_freq: 32
   unique: false
   load_model_with_epoch: 20
-  permutate_emissions: true
+  permutate_emissions: false
   gen_seq_len: 100
   num_seq: 2_000_000_000
   suffix: ''
