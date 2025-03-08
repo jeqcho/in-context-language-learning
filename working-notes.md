@@ -708,3 +708,79 @@ The memorymapped run went further and started training. It failed with
 The email says its out of memory.
 
 Reduced the chunk size to 100x of the batch size instead of 500. Managed to run.
+
+Now let's check the new data generated. Accidentally cancelled it. Rebatched the job for H-500-E-200.
+
+It doesn't seem like the LM is learning the H-200-E-200.
+- We can move towards permutated H-500-E-100.
+
+The GPU is also not fully utilized. Let's solve this first.
+
+# March 2
+
+Let's continue solving the GPU utilization problem. Let's run the optimized verison and see if it works without errors. Tbh I think a lot of it just comes down to increasing the prefetch.
+
+Once it is solved, we can train the llama on H-500-E-200 perms and no perms. And also swee hyperparameters to learn H-200-E-200.
+
+OOM. reducing number of workers from 8 to 4.
+
+# March 7
+
+The main goal is to up the GPU efficiency.
+
+```python
+# Configure DataLoader with optimized settings
+    data_loader = DataLoader(
+        dataset=dataset,
+        batch_size=cfg["train"]["train_batch_size"],
+        shuffle=True,
+        num_workers=num_workers,
+        pin_memory=True,  # Pin memory for faster GPU transfer
+        prefetch_factor=4,  # Prefetch more batches
+        persistent_workers=True,  # Keep workers alive between iterations
+        drop_last=True,  # Drop incomplete batches for better performance
+    )
+```
+```
+train_batch_size: 1024
+```
+
+OOM above.
+
+Now changing batch size to 512. 5973175. FAILED
+
+Further reduce prefetch from 4 to 2. 5973393.
+
+Set `pin_memory=False`. 5973585. FAILED
+
+Reduce chunk size from 10M to 100k. 100x decrease. 5973801. OK. 22 minutes to 100 steps.
+
+Now, I will reset `pin_memory=True`. 5975320. OK. 7.5 minutes to 100 steps.
+
+Further increase chunk size from 100k to 1M. 5975463. cancelled.
+
+Realized that so far, all processes only use 1 GPU. The other GPU with low utilization somehow has high disk io utilization.
+
+Chunk size back to 100k. Chunk number from 3 to 5. 5976379
+
+1 GPU instead of 2. Chunk size 200k, chunk number 3. 5976536
+
+2 GPUs. Chunk size 200k, chunk number 3. 5977482
+
+2 GPUs. Chunk size 400k, chunk number 3. 5977546
+
+2 GPUs. Chunk size 400k, chunk number 2. 5977618
+
+2 GPUs. Chunk size 100k, chunk number 3. 5977741
+
+# March 8
+
+Number of GPU does matter. 2 is much faster than 1, even though one of the GPUs in the 2 case doesn't get utilized much.
+
+Chunk size matter. 400k slows things down very much. 100k and 200k are better holding other things fixed. For 3 number of chunks, 200k is much better than 100k or 400k.
+
+For 100k, num chunks 5 is way better than num chunks 3, and this effects kicks in even more later on in the first hour.
+
+So let's scan number of chunks for 200k. and scan chunk size for num chunk 5.
+
+Note, we are using the run folder `6-h-500`.
