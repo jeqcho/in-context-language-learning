@@ -43,49 +43,22 @@ class HMMDataset(Dataset):
 
 
 class MemoryMappedHMMDataset(Dataset):
-    def __init__(self, data_filename, num_chunks: int, chunk_size: int):
+    def __init__(self, data_filename):
         """Initialize dataset with memory mapping for efficient handling of large datasets.
 
         Args:
             data_filename: Path to the .npy file containing the dataset
-            chunk_size: Optional size for data chunking. If None, determines a reasonable
-                        chunk size based on available memory.
         """
         # Use memory mapping to access the dataset without loading it entirely
         self.data = np.load(data_filename, mmap_mode="r")
         self.data_shape = self.data.shape
-
-        # Set up chunking if requested
-        self.chunk_size = chunk_size
-
-        # Cache to store recently accessed chunks
-        self.cache = {}
-        self.max_cache_chunks = num_chunks  # Maximum number of chunks to keep in memory
 
     def __len__(self):
         "Returns total number of samples"
         return self.data_shape[0]
 
     def __getitem__(self, idx):
-        "Get sample by index using chunked access"
-        # Calculate which chunk this index belongs to
-        chunk_idx = idx // self.chunk_size
-
-        # If chunk is not in cache, load it
-        if chunk_idx not in self.cache:
-            # If cache is full, remove least recently used chunk
-            if len(self.cache) >= self.max_cache_chunks:
-                oldest_chunk = next(iter(self.cache))
-                del self.cache[oldest_chunk]
-
-            # Load the chunk into cache
-            start = chunk_idx * self.chunk_size
-            end = min((chunk_idx + 1) * self.chunk_size, len(self))
-            self.cache[chunk_idx] = torch.from_numpy(self.data[start:end].copy())
-
-        # Get index within the chunk
-        local_idx = idx % self.chunk_size
-        return self.cache[chunk_idx][local_idx]
+        return torch.from_numpy(self.data[idx].copy())
 
 
 class Trainer:
@@ -390,14 +363,12 @@ class Trainer:
         return self.train_loss, self.eval_loss
 
 
-def initialize_wandb(cfg):
+def initialize_wandb(cfg, run_name=None):
     """Initialize Weights & Biases logging."""
     wandb_cfg = cfg.copy()
     wandb_cfg.pop("wandb")
-    
-    # Create a run name that includes chunk size and number of chunks
-    run_name = f"chunks_{cfg['train']['num_chunks']}_size_{cfg['train']['chunk_size']}"
-    
+
+
     return wandb.init(
         project=cfg["wandb"]["project"],
         entity=cfg["wandb"]["entity"],
@@ -420,15 +391,26 @@ def parse_args():
     """Parse command line arguments to override training config."""
     parser = argparse.ArgumentParser(description="Training configuration overrides")
     
-    # Add arguments for training parameters that can be overridden
+    # Training parameters
     parser.add_argument("--lr", type=float, help="Learning rate")
     parser.add_argument("--weight_decay", type=float, help="Weight decay")
     parser.add_argument("--train_batch_size", type=int, help="Training batch size")
     parser.add_argument("--eval_batch_size", type=int, help="Evaluation batch size")
     parser.add_argument("--steps", type=int, help="Total training steps")
     parser.add_argument("--warmup_ratio", type=float, help="Warmup ratio")
-    parser.add_argument("--chunk_size", type=int, help="Chunk size for memory mapping")
-    parser.add_argument("--num_chunks", type=int, help="Number of chunks to cache")
+    
+    # Model hyperparameters
+    parser.add_argument("--seq_len", type=int, help="Sequence length")
+    parser.add_argument("--hid_dim", type=int, help="Hidden dimension")
+    parser.add_argument("--n_head", type=int, help="Number of attention heads")
+    parser.add_argument("--n_layer", type=int, help="Number of transformer layers")
+    parser.add_argument("--resid_pdrop", type=float, help="Residual dropout probability")
+    parser.add_argument("--embd_pdrop", type=float, help="Embedding dropout probability")
+    parser.add_argument("--attn_pdrop", type=float, help="Attention dropout probability")
+    
+    # Wandb parameters
+    parser.add_argument("--run_name", type=str, help="Override wandb run name")
+    
     parser.add_argument("--config", type=str, required=True, help="Path to config file")
     
     return parser.parse_args()
@@ -471,10 +453,13 @@ def main():
             if arg_name in cfg["train"]:
                 print(f"Overriding config['train']['{arg_name}'] with {arg_value}")
                 cfg["train"][arg_name] = arg_value
+            elif arg_name in cfg["model"]:
+                print(f"Overriding config['model']['{arg_name}'] with {arg_value}")
+                cfg["model"][arg_name] = arg_value
 
     # Only rank 0 handles logging and saving
     if (USE_DDP and global_rank == 0) or not USE_DDP:
-        run = initialize_wandb(cfg)
+        run = initialize_wandb(cfg, args.run_name)
         cfg = run.config
         save_path = configure_dir(run.id, run.name, cfg)
     else:
@@ -484,6 +469,13 @@ def main():
 
     # Initialize model and optimizer
     model = Llama(cfg).to(device=device_id)
+    
+    # Calculate and print total parameters
+    total_params = sum(p.numel() for p in model.parameters())
+    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print(f"Total parameters: {total_params:,}")
+    print(f"Trainable parameters: {trainable_params:,}")
+    
     optim = torch.optim.AdamW(
         model.parameters(),
         lr=float(cfg["train"]["lr"]),
@@ -493,8 +485,6 @@ def main():
     eval_loss_fn = nn.KLDivLoss(reduction="batchmean")
 
     # Init dataloader
-    # TODO put filename params into the yaml
-
     hmm_args = HMMArgs(
         num_emissions=cfg["hmm"]["num_emissions"],
         num_states=cfg["hmm"]["num_states"],
@@ -522,20 +512,9 @@ def main():
         suffix=cfg["hmm"]["suffix"],
     )
 
-    # Use memory-mapped dataset for efficient handling of large data
     print(f"Loading dataset from {data_generator.data_filename} using memory mapping")
-    # Calculate appropriate chunk size based on available memory and data size
-    # Larger chunks means less disk I/O but more memory usage
-    chunk_size = cfg["train"]["chunk_size"]
-    num_chunks = cfg["train"]["num_chunks"]
-    print(f"Using chunk size of {chunk_size} for memory mapping")
-    print(f"{num_chunks=}")
-
-    # Create dataset with memory mapping
     dataset = MemoryMappedHMMDataset(
         data_filename=data_generator.data_filename,
-        chunk_size=chunk_size,
-        num_chunks=num_chunks,
     )
 
     # Optimize DataLoader for maximum throughput
@@ -545,7 +524,7 @@ def main():
     # Configure DataLoader with optimized settings
     data_loader = DataLoader(
         dataset=dataset,
-        batch_size=cfg["train"]["train_batch_size"],
+        batch_size=int(cfg["train"]["train_batch_size"]),
         shuffle=True,
         num_workers=num_workers,
         pin_memory=True,  # Pin memory for faster GPU transfer

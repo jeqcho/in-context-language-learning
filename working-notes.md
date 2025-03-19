@@ -784,3 +784,36 @@ For 100k, num chunks 5 is way better than num chunks 3, and this effects kicks i
 So let's scan number of chunks for 200k. and scan chunk size for num chunk 5.
 
 Note, we are using the run folder `6-h-500`.
+
+# March 9
+
+Report [link](https://api.wandb.ai/links/jchooi/psvob4f2). Decreasing chunk_size and increasing number of chunks helps.
+
+One observation is that nproc=1 is faster than nproc=2. Maybe something to do with inter-GPU communication.
+
+TODO is to check the wandb on nproc=2 vs nproc=1 vs gpu=1 for chunk_size=100k and num_chunks=7
+
+And also, fixing gpu=2 nproc=1 chunk_size=100k, what is the best num_chunks?
+
+# March 10
+
+3 chunks of 100k gives high throughput, showing phase transition between 200M and 250M.
+
+# March 11
+
+First I will sort out a rule of thumb for num chunk and chunk size for high throughput.
+
+# March 12
+
+Since CPU is underutilized, I would expect that increasing num workers and prefetch helps. I also expect that keeping chunk size small and num chunks high helps. Sbatched a no-chunk run.
+
+nworker-4-prefetch-2
+
+Now scanning nworkers and prefetch.
+
+
+# March 19
+
+Now we have full 100% GPU utilization.
+
+Goal is to bring the loss down for permutated HMMs. Main approach will be to scaling up the model params. In binary search speak, we first need to find the upper bound.

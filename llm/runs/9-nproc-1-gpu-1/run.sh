@@ -1,16 +1,16 @@
 #!/bin/bash
-#SBATCH --job-name=llama-on-h-500-e-200
+#SBATCH --job-name=1-gpu-1-nproc
 #SBATCH --account=kempner_sham_lab
 #SBATCH --partition=kempner_h100
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=48
-#SBATCH --gres=gpu:2
+#SBATCH --gres=gpu:1
 #SBATCH --time=0-01:00
 #SBATCH --mem=720G
-#SBATCH --array=0-5%3  # Run 3 jobs at a time (out of 6 total combinations)
-#SBATCH --output=logfiles/llama-on-h-500-e-200-%A-%a.out
-#SBATCH --error=logfiles/llama-on-h-500-e-200-%A-%a.err
+#SBATCH --array=0-1%2  # Run 2 jobs at a time (for nproc 1 and 2)
+#SBATCH --output=logfiles/1-gpu-1-nproc-%A-%a.out
+#SBATCH --error=logfiles/1-gpu-1-nproc-%A-%a.err
 #SBATCH --mail-type=END
 #SBATCH --mail-user=jeqin_chooi+slurm@college.harvard.edu
 
@@ -21,18 +21,18 @@ module load python
 mamba activate olmo2
 
 # Define arrays for parameters
-num_chunks_array=(13 11 9 7 5 3)
+num_chunks_array=(7)
 chunk_size_array=(100000)
 
-# Get values for this run - since we only have one chunk_size, we don't need to calculate indices
-num_chunks=${num_chunks_array[$SLURM_ARRAY_TASK_ID]}
+# Use fixed values for chunks and size
+num_chunks=${num_chunks_array[0]}
 chunk_size=${chunk_size_array[0]}
 
 echo "Running with num_chunks=$num_chunks, chunk_size=$chunk_size"
 
 # Set proper environment variables for distributed training
 export MASTER_ADDR="127.0.0.1"
-export MASTER_PORT=$((26040 + SLURM_ARRAY_TASK_ID))  # Unique port for each array job
+export MASTER_PORT=$((26047 + SLURM_ARRAY_TASK_ID))  # Unique port for each array job
 export PYTHONPATH=$PYTHONPATH:/n/home07/jchooi/in-context-language-learning
 
 echo "Master IP: $MASTER_ADDR"

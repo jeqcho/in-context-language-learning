@@ -1,47 +1,44 @@
 #!/bin/bash
-#SBATCH --job-name=llama-on-h-500-e-200
+#SBATCH --job-name=scan-num-chunks
 #SBATCH --account=kempner_sham_lab
 #SBATCH --partition=kempner_h100
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=48
-#SBATCH --gres=gpu:2
-#SBATCH --time=0-01:00
-#SBATCH --mem=720G
-#SBATCH --array=0-5%3  # Run 3 jobs at a time (out of 6 total combinations)
-#SBATCH --output=logfiles/llama-on-h-500-e-200-%A-%a.out
-#SBATCH --error=logfiles/llama-on-h-500-e-200-%A-%a.err
+#SBATCH --cpus-per-task=24
+#SBATCH --gres=gpu:1
+#SBATCH --time=0-03:00
+#SBATCH --mem=360G
+#SBATCH --array=1-1
+#SBATCH --output=logfiles/scan-num-chunks-%A-%a.out
+#SBATCH --error=logfiles/scan-num-chunks-%A-%a.err
 #SBATCH --mail-type=END
 #SBATCH --mail-user=jeqin_chooi+slurm@college.harvard.edu
 
-# Load modules
 module load python
-
-# Activate conda environment (optional)
 mamba activate olmo2
 
-# Define arrays for parameters
-num_chunks_array=(13 11 9 7 5 3)
-chunk_size_array=(100000)
+# Define number of chunks options
+num_chunks_array=(1 2 3 5)
+chunk_size=100000
 
-# Get values for this run - since we only have one chunk_size, we don't need to calculate indices
+# Select number of chunks based on array task ID
 num_chunks=${num_chunks_array[$SLURM_ARRAY_TASK_ID]}
-chunk_size=${chunk_size_array[0]}
 
 echo "Running with num_chunks=$num_chunks, chunk_size=$chunk_size"
 
-# Set proper environment variables for distributed training
+# Set environment variables for distributed training
 export MASTER_ADDR="127.0.0.1"
-export MASTER_PORT=$((26040 + SLURM_ARRAY_TASK_ID))  # Unique port for each array job
+export MASTER_PORT=$((26077 + SLURM_ARRAY_TASK_ID))
 export PYTHONPATH=$PYTHONPATH:/n/home07/jchooi/in-context-language-learning
+export LOGLEVEL=INFO
 
 echo "Master IP: $MASTER_ADDR"
 echo "Master Port: $MASTER_PORT"
 echo "Visible GPUs: $CUDA_VISIBLE_DEVICES"
 echo "Array Task ID: $SLURM_ARRAY_TASK_ID"
-export LOGLEVEL=INFO
+echo "Testing num_chunks: ${num_chunks}"
 
-# Run with parameter combinations
+# Run training
 torchrun \
     --nproc_per_node=1 \
     --master_addr=$MASTER_ADDR \
