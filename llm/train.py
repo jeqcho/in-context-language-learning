@@ -9,7 +9,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.distributed as dist
-from torch.optim.lr_scheduler import LinearLR
+from torch.optim.lr_scheduler import LinearLR, CosineAnnealingLR, ExponentialLR, OneCycleLR
 from torch.nn.parallel import DistributedDataParallel as DDP
 import wandb
 from torch.utils.data import Dataset, DataLoader
@@ -104,13 +104,41 @@ class Trainer:
         self.warmup_steps = int(self.warmup_ratio * self.steps)
         self.linear_scheduler_steps = int((1 - self.warmup_ratio) * self.steps)
 
-        self.scheduler = LinearLR(
-            self.opt,
-            start_factor=self.linear_start_factor,
-            end_factor=self.linear_end_factor,
-            total_iters=self.steps,
-        )
+        # Initialize scheduler based on config
+        scheduler_type = self.cfg["train"].get("scheduler_type", "linear")
+        
+        if scheduler_type == "linear":
+            self.scheduler = LinearLR(
+                self.opt,
+                start_factor=self.linear_start_factor,
+                end_factor=self.linear_end_factor,
+                total_iters=self.steps,
+            )
+        elif scheduler_type == "cosine":
+            self.scheduler = CosineAnnealingLR(
+                self.opt,
+                T_max=self.steps,
+                eta_min=self.cfg["train"].get("min_lr", 1e-6)
+            )
+        elif scheduler_type == "exponential":
+            self.scheduler = ExponentialLR(
+                self.opt,
+                gamma=self.cfg["train"].get("gamma", 0.999)
+            )
+        elif scheduler_type == "one_cycle":
+            self.scheduler = OneCycleLR(
+                self.opt,
+                max_lr=self.cfg["train"]["lr"],
+                epochs=1,
+                steps_per_epoch=self.steps,
+                pct_start=self.warmup_ratio,
+                div_factor=self.cfg["train"].get("div_factor", 25),
+                final_div_factor=self.cfg["train"].get("final_div_factor", 1e4)
+            )
+        else:
+            raise ValueError(f"Unknown scheduler type: {scheduler_type}")
 
+        print(f"Using {scheduler_type} scheduler")
         print(f"Initial learning rate: {self.scheduler.get_last_lr()[0]}")
 
     def _unpack_dict(self, d):
@@ -256,6 +284,24 @@ class Trainer:
         # Backpropagation
         self.opt.zero_grad()
         loss.backward()
+        
+        # Log gradients
+        if wandb.run is not None and self.iters % self.print_interval == 0:
+            # Log gradient norms for each parameter group
+            total_norm = 0
+            for name, param in self.model.named_parameters():
+                if param.grad is not None:
+                    param_norm = param.grad.data.norm(2).item()
+                    total_norm += param_norm ** 2
+                    to_log[f"gradients/norm/{name}"] = param_norm
+                    
+                    # Log histogram of gradients
+                    if self.iters % (self.print_interval * 5) == 0:  # Less frequent to save bandwidth
+                        wandb.log({f"gradients/histogram/{name}": wandb.Histogram(param.grad.detach().cpu().numpy())})
+            
+            total_norm = total_norm ** 0.5
+            to_log["gradients/global_norm"] = total_norm
+        
         self.opt.step()
         self.scheduler.step()
 

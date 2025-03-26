@@ -817,3 +817,21 @@ Now scanning nworkers and prefetch.
 Now we have full 100% GPU utilization.
 
 Goal is to bring the loss down for permutated HMMs. Main approach will be to scaling up the model params. In binary search speak, we first need to find the upper bound.
+
+# March 26
+
+The actual numbers of parameters are 38,149,120 and 134,759,680.
+
+Let's try to sweep over learning rate schedules.
+
+Current state of ICLL https://chatgpt.com/share/e/67e4092d-8934-800e-b42c-c448d09afc6b
+
+We might have to sweep across layers on a log scale, each layer acting as a gradient step (https://thegradient.pub/in-context-learning-in-context)
+
+One idea is to create small Zipf HMMs. Then it might be more tractable to plot the log scale of loss over number of layers.
+
+Chan et al. (2022) identified that specific distributional properties in pretraining data (such as “burstiness” – clusters of repeated tokens – and variable token meanings across contexts) are crucial for ICL to emerge, whereas models trained on too-uniform data tend to memorize rather than learn new patterns in context.
+- We might have to implement curriculum learning
+
+In fact, Rajaraman et al. prove theoretically that a 3-layer attention-only transformer can implement the exact computation needed to infer an arbitrary $k$-th order Markov model in-context (scaling as $O(\log k)$ layers if we only allow one attention head to focus on one token at a time)
+- We can train such a transformer and see how its loss compares to our 135M transformer

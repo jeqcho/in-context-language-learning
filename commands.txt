@@ -1,0 +1,8 @@
+The following command can help you determine the optimal resource configuration for your job.
+The initial version of this command only prints the total utilization of nodes and does not account for preemptible resources. We will notify you once that version is implemented.
+
+Command for the kempner_h100 partition:
+sh /n/holylfs06/LABS/kempner_shared/Everyone/cluster_scripts/free_resources kempner_h100
+
+Command for the kempner partition:
+sh /n/holylfs06/LABS/kempner_shared/Everyone/cluster_scripts/free_resources kempner

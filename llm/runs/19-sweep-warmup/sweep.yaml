@@ -1,0 +1,32 @@
+program: train.py
+method: bayes
+metric:
+  name: test/kl_loss/5_states
+  goal: minimize
+parameters:
+  train.scheduler_type:
+    values: ["linear", "cosine", "exponential", "one_cycle"]
+  train.lr:
+    distribution: log_uniform_values
+    min: 1e-5
+    max: 1e-3
+  train.warmup_ratio:
+    distribution: uniform
+    min: 0.05
+    max: 0.2
+  train.min_lr:
+    distribution: log_uniform_values
+    min: 1e-7
+    max: 1e-5
+  train.gamma:
+    distribution: uniform
+    min: 0.99
+    max: 0.999
+  train.div_factor:
+    values: [10, 25, 50]
+  train.final_div_factor:
+    values: [1e3, 1e4, 1e5]
+  train.linear_start_factor:
+    values: [1.0]
+  train.linear_end_factor:
+    values: [0.1, 0.01] 
